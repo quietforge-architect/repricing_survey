@@ -49,7 +49,15 @@ function Invoke-SetupStep {
 try {
 function Test-PythonAvailable {
   foreach ($candidate in @('python', 'python3', 'py')) {
-    if (Get-Command $candidate -ErrorAction SilentlyContinue) { return $true }
+    $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+    if ($cmd) {
+      try {
+        & $cmd.Source '--version' > $null 2>&1
+        if ($LASTEXITCODE -eq 0) { return $true }
+      } catch {
+        continue
+      }
+    }
   }
   return $false
 }
