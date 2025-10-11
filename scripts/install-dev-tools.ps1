@@ -93,12 +93,16 @@ try {
   & $npmExe 'install' '--no-audit' '--no-fund'
   if ($LASTEXITCODE -ne 0) { throw "npm install failed with exit code $LASTEXITCODE" }
 
-  Write-Host "Ensuring Playwright browsers are installed (idempotent)..."
-  & $npxExe 'playwright' 'install'
-  if ($LASTEXITCODE -ne 0) {
-    Write-Warning "Playwright browser install returned exit code $LASTEXITCODE. Run 'npx playwright install' manually when network is available."
+  if ($env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD -eq '1') {
+    Write-Warning "Skipping Playwright browser download because PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1. Run 'npx playwright install' later to fetch browsers."
   } else {
-    Write-Host "Playwright browsers ready."
+    Write-Host "Ensuring Playwright browsers are installed (idempotent)..."
+    & $npxExe 'playwright' 'install'
+    if ($LASTEXITCODE -ne 0) {
+      Write-Warning "Playwright browser install returned exit code $LASTEXITCODE. Run 'npx playwright install' manually when network is available."
+    } else {
+      Write-Host "Playwright browsers ready."
+    }
   }
 
   Write-Host "Priming Notion MCP server package (npx --help)..."
