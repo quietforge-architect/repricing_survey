@@ -1,35 +1,53 @@
 <#
 setup-local-sqlite-service.ps1
-Helper to install dependencies for the local sqlite-service and run init steps.
-This script will only run npm commands in the project's sqlite-service folder. Requires Node/npm available in PATH.
-USAGE:
+
+Installs dependencies for the local sqlite-service, initializes the database, and starts the service in the foreground.
+Requires Node.js/npm in PATH.
+
+Usage:
   .\scripts\setup-local-sqlite-service.ps1
 #>
-$servicePath = Join-Path $PSScriptRoot '..' | Join-Path -ChildPath 'agents\logic\sqlite-service'
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Get-CommandPath {
+  param([Parameter(Mandatory = $true)][string]$Name)
+  foreach ($candidate in @("$Name.cmd", "$Name.exe", $Name)) {
+    $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+  }
+  return $null
+}
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$servicePath = Join-Path $repoRoot 'agents\logic\sqlite-service'
 Write-Host "Using service path: $servicePath"
 
-if (-not (Test-Path $servicePath)) { Write-Error "Service path not found: $servicePath"; exit 1 }
+if (-not (Test-Path $servicePath)) { throw "Service path not found: $servicePath" }
 
-# Check node
-try { & node -v > $null 2>&1 } catch { Write-Error "node not found in PATH. Install Node and re-run. Use scripts\install-node-nvm.ps1 for guidance."; exit 2 }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+  throw "Node.js not detected. Install Node.js and rerun this script."
+}
 
-Write-Host "Installing npm packages in sqlite-service..."
+$npmExe = Get-CommandPath -Name 'npm'
+if (-not $npmExe) { throw "npm executable not found in PATH." }
+
 Push-Location $servicePath
-npm install
-if ($LASTEXITCODE -ne 0) { Write-Error "npm install failed with exit code $LASTEXITCODE"; Pop-Location; exit 3 }
+try {
+  Write-Host "Installing sqlite-service npm dependencies..."
+  & $npmExe 'install'
+  if ($LASTEXITCODE -ne 0) { throw "npm install failed with exit code $LASTEXITCODE" }
 
-Write-Host "Running init-db..."
-npm run init-db
-if ($LASTEXITCODE -ne 0) { Write-Warning "init-db may have failed. Check output." }
+  Write-Host "Running init-db..."
+  & $npmExe 'run' 'init-db'
+  if ($LASTEXITCODE -ne 0) { Write-Warning "init-db reported exit code $LASTEXITCODE. Check the output for details." }
 
-Write-Host "Starting sqlite-service (foreground). Press Ctrl+C to stop."
-npm start
-if ($LASTEXITCODE -ne 0) { Write-Error "npm install failed with exit code $LASTEXITCODE"; Pop-Location; exit 3 }
-
-Write-Host "Running init-db..."
-npm run init-db
-if ($LASTEXITCODE -ne 0) { Write-Warning "init-db may have failed. Check output." }
-
-Write-Host "Starting sqlite-service (foreground). Press Ctrl+C to stop."
-npm start
-Pop-Location
+  Write-Host "Starting sqlite-service (Ctrl+C to stop)..."
+  & $npmExe 'start'
+  if ($LASTEXITCODE -ne 0) { Write-Warning "sqlite-service exited with code $LASTEXITCODE" }
+} finally {
+  Pop-Location
+}

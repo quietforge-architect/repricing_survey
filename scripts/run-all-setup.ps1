@@ -16,7 +16,8 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptRoot = $PSScriptRoot
 $repoRoot = Split-Path -Parent $scriptRoot
-Set-Location $repoRoot
+Push-Location $repoRoot
+try {
 
 function Invoke-SetupStep {
   param(
@@ -86,3 +87,6 @@ foreach ($step in $steps) {
 }
 
 Write-Host "All requested setup steps completed." -ForegroundColor Green
+} finally {
+  Pop-Location
+}
