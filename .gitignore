@@ -10,3 +10,4 @@ agents/logs/
 # Env and credentials
 .env
 .env.local
+.venv/

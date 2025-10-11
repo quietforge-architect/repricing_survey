@@ -12,8 +12,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$venvPath = Resolve-Path -LiteralPath (Join-Path $repoRoot $Path) -ErrorAction SilentlyContinue
-if (-not $venvPath) { $venvPath = Join-Path $repoRoot $Path }
+$resolved = Resolve-Path -LiteralPath (Join-Path $repoRoot $Path) -ErrorAction SilentlyContinue
+$venvPath = if ($resolved) { $resolved.ProviderPath } else { Join-Path $repoRoot $Path }
 
 if (Test-Path $venvPath) {
   if (-not $Force) {
