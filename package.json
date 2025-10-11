@@ -1,20 +1,28 @@
-{
-  "name": "amazon-repricing-survey",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "agent:survey-sync": "node agents/logic/survey_sync.js",
-    "agent:html-audit": "node agents/logic/html_audit.js",
-    "sqlite-service:start": "node agents/logic/sqlite-service/index.js",
-    "sqlite-service:init": "node agents/logic/sqlite-service/init-db.js",
-    "tools:versions": "node -v && npm -v && npx --version || true",
-    "install-playwright-browsers": "npx playwright install",
-    "mcp:playwright": "npx -y @playwright/mcp@latest",
-    "mcp:notion": "npx -y @notionhq/notion-mcp-server@latest",
-    "mcp:markitdown": "node scripts/markitdown-mcp.js"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "playwright": "^1.39.0"
-  }
+﻿{
+    "name":  "amazon-repricing-survey",
+    "version":  "1.0.0",
+    "private":  true,
+    "scripts":  {
+                    "agent:survey-sync":  "node agents/logic/survey_sync.js",
+                    "agent:html-audit":  "node agents/logic/html_audit.js",
+                    "sqlite-service:start":  "node agents/logic/sqlite-service/index.js",
+                    "sqlite-service:init":  "node agents/logic/sqlite-service/init-db.js",
+                    "tools:versions":  "node -v \u0026\u0026 npm -v \u0026\u0026 npx --version || true",
+                    "install-playwright-browsers":  "npx playwright install",
+                    "mcp:playwright":  "npx -y @playwright/mcp@latest",
+                    "mcp:notion":  "npx -y @notionhq/notion-mcp-server@latest",
+                    "mcp:markitdown":  "node ./tools/markitdown-mcp.js",
+                    "export:safe":  "node tools/export-safe-data.js",
+                    "collector:start":  "node agents/logic/local-collector/server.js",
+                    "validate:exports":  "node tools/validate-exports.js",
+                    "export:safe:db":  "python tools/export_safe_from_db.py"
+                },
+    "dependencies":  {
+
+                     },
+    "devDependencies":  {
+                            "playwright":  "^1.56.0",
+                            "markitdown":  "^0.0.4",
+                            "@notionhq/notion-mcp-server":  "^1.9.0"
+                        }
 }

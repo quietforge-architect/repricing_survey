@@ -47,6 +47,11 @@ Project requirements and quick install
   npx -y @notionhq/notion-mcp-server@latest
   ```
 
+  Tooling location:
+
+  - The repository now includes a `tools/` folder for small helper wrappers and stubs (e.g. `tools/markitdown-mcp.js`).
+  - Scripts will set `TOOL_HOME` to the repo `tools/` folder by default. To move these helpers to a machine-wide location (e.g. `C:\\Program Files\\dev-tools`), create the folder, copy the files, and set the system environment variable `TOOL_HOME` to that path (requires admin).
+
 ## How to set up local sqlite-service
 
 1) Install Node/npm

@@ -12,7 +12,7 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "scripts/markitdown-mcp.js"
+        "tools/markitdown-mcp.js"
       ],
       "gallery": true
     },

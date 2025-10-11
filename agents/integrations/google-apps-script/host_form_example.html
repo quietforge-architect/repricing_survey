@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey Form (Minimal Example)</title>
+  <meta name="schema_version" content="v1.0.0" />
+  <meta name="form_name" content="Amazon_Repricing_Feedback_Survey" />
+  <style>
+    body{font-family:system-ui, sans-serif; margin:2rem;}
+    label{display:block; margin-top:1rem;}
+    textarea,input,select{width:100%; padding:.5rem;}
+    button{margin-top:1rem; padding:.6rem 1rem;}
+    .ok{color:green} .err{color:#b00020}
+  </style>
+  <script>
+    // Optional: show a quick success/failure message without leaving the page
+    async function handleSubmit(ev){
+      ev.preventDefault();
+      const form = ev.target;
+      const data = new FormData(form);
+      const resp = await fetch(form.action, { method:'POST', body:data });
+      const text = await resp.text();
+      document.getElementById('status').textContent = text;
+    }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.example/surveys",
+    "@type": "SurveySchema",
+    "version": "1.0.0",
+    "sections": {
+      "SellerProfile": ["experience","sku_count","model"],
+      "RepricingExperience": ["satisfaction","painpoint"],
+      "Participation": ["contact"]
+    }
+  }
+  </script>
+  <meta name="data_categories" content="SellerProfile,RepricingExperience,Participation" />
+  <meta name="author" content="Quiet Forge Development Studio" />
+  <meta name="description" content="Minimal test form for the Apps Script Web App collector." />
+  <meta name="robots" content="noindex" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="generator" content="agents/integrations/google-apps-script" />
+  <meta name="created" content="2025-10-11" />
+  <meta name="version" content="1.0.0" />
+  <meta name="keywords" content="survey, apps script, google sheets" />
+</head>
+<body>
+  <!-- Replace ACTION_URL with your deployed /exec URL -->
+  <form action="ACTION_URL" method="POST" onsubmit="handleSubmit(event)">
+    <h1>Amazon Repricing Feedback (Minimal)</h1>
+
+    <label data-category="SellerProfile" data-type="ordinal" data-key="experience">
+      How long selling on Amazon?
+      <select name="experience">
+        <option value=""><-- select --></option>
+        <option><1 year</option>
+        <option>1–3 years</option>
+        <option>3–5 years</option>
+        <option>5+ years</option>
+      </select>
+    </label>
+
+    <label data-category="SellerProfile" data-type="numeric" data-key="sku_count">
+      Rough SKU count
+      <input name="sku_count" type="number" min="0" placeholder="e.g., 500" />
+    </label>
+
+    <label data-category="RepricingExperience" data-type="text_long" data-key="painpoint">
+      Biggest pain point
+      <textarea name="painpoint" placeholder="Feel free to ramble"></textarea>
+    </label>
+
+    <label data-category="Participation" data-type="string" data-key="contact">
+      Optional contact (Email/Discord)
+      <input name="contact" placeholder="Optional" />
+    </label>
+
+    <button type="submit">Submit</button>
+    <div id="status" aria-live="polite" style="margin-top:.75rem"></div>
+  </form>
+</body>
+#
+</html>
+

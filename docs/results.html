@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey Results Dashboard (Safe)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1.5rem; color: #222; }
+    header { display:flex; align-items:center; gap:1rem; }
+    h1 { margin: 0.2rem 0; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top:1rem; }
+    .card { border:1px solid #ddd; border-radius:.75rem; padding:1rem; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .bar { height: 10px; background:#e6f0ff; border-radius: 6px; overflow:hidden; margin: .35rem 0 .8rem; }
+    .bar > span { display:block; height:100%; background:#3578e5; }
+    .muted { color:#666; font-size:.9rem; }
+    .row { display:flex; justify-content:space-between; align-items:center; }
+    footer { margin-top: 2rem; color:#666; font-size:.9rem; }
+    input[type=file] { display:none; }
+    .btn { padding:.5rem .8rem; border:1px solid #ccc; border-radius:.5rem; background:#fafafa; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Survey Results (Safe Aggregates)</h1>
+    <button class="btn" id="btnLoad">Load JSON Manually</button>
+    <input id="filePicker" type="file" accept="application/json" multiple />
+  </header>
+  <p class="muted">This page attempts to load ../public/export/survey_summary.json by default. Or click “Load JSON Manually” to select summary/responses JSON files.</p>
+
+  <div class="grid">
+    <div class="card" id="cardTotals">
+      <h3>Totals</h3>
+      <div id="totalResponses" class="row"><span>Total Responses</span><b>—</b></div>
+      <div id="avgSatisfaction" class="row"><span>Avg Satisfaction</span><b>—</b></div>
+      <div class="muted" id="generatedAt">—</div>
+    </div>
+    <div class="card">
+      <h3>Experience Mix</h3>
+      <div id="experienceList"></div>
+    </div>
+    <div class="card">
+      <h3>Glitch Reports</h3>
+      <div id="glitchList"></div>
+    </div>
+    <div class="card">
+      <h3>Top Features</h3>
+      <div id="featuresList"></div>
+    </div>
+  </div>
+
+  <footer>
+    Tip: Serve this folder via a local static server for fetch() to work (or use the “Load JSON Manually” button).
+  </footer>
+
+  <script>
+    const els = {
+      totalResponses: document.getElementById('totalResponses').querySelector('b'),
+      avgSatisfaction: document.getElementById('avgSatisfaction').querySelector('b'),
+      generatedAt: document.getElementById('generatedAt'),
+      experienceList: document.getElementById('experienceList'),
+      glitchList: document.getElementById('glitchList'),
+      featuresList: document.getElementById('featuresList'),
+      btnLoad: document.getElementById('btnLoad'),
+      filePicker: document.getElementById('filePicker'),
+    };
+
+    function renderBars(container, data) {
+      container.innerHTML = '';
+      const entries = Object.entries(data);
+      const max = Math.max(1, ...entries.map(([,v]) => v));
+      for (const [k, v] of entries) {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span>${k}</span><b>${v}</b>`;
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const span = document.createElement('span');
+        span.style.width = ((v/max)*100).toFixed(1) + '%';
+        bar.appendChild(span);
+        wrap.appendChild(row);
+        wrap.appendChild(bar);
+        container.appendChild(wrap);
+      }
+    }
+
+    function renderTopFeatures(container, list) {
+      container.innerHTML = '';
+      const max = Math.max(1, ...list.map(x => x.count));
+      for (const item of list) {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span>${item.name}</span><b>${item.count}</b>`;
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const span = document.createElement('span');
+        span.style.width = ((item.count/max)*100).toFixed(1) + '%';
+        bar.appendChild(span);
+        wrap.appendChild(row);
+        wrap.appendChild(bar);
+        container.appendChild(wrap);
+      }
+    }
+
+    async function tryAutoLoad() {
+      try {
+        const res = await fetch('../public/export/survey_summary.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Fetch failed');
+        const data = await res.json();
+        applySummary(data);
+      } catch (e) {
+        console.warn('Auto-load failed. Use the Load button to select JSON files.', e);
+      }
+    }
+
+    function applySummary(summary) {
+      els.totalResponses.textContent = summary.totalResponses ?? '—';
+      els.avgSatisfaction.textContent = summary.avgSatisfaction ?? '—';
+      els.generatedAt.textContent = summary.generatedAt || '';
+      renderBars(els.experienceList, summary.byExperience || {});
+      renderBars(els.glitchList, summary.glitchCounts || {});
+      renderTopFeatures(els.featuresList, summary.topFeatures || []);
+    }
+
+    els.btnLoad.addEventListener('click', () => els.filePicker.click());
+    els.filePicker.addEventListener('change', async (ev) => {
+      const files = Array.from(ev.target.files || []);
+      const summaryFile = files.find(f => /summary\.json$/i.test(f.name)) || files[0];
+      if (!summaryFile) return;
+      const text = await summaryFile.text();
+      const summary = JSON.parse(text);
+      applySummary(summary);
+    });
+
+    tryAutoLoad();
+  </script>
+</body>
+</html>
+

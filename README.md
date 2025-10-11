@@ -194,6 +194,54 @@ If `docker` is not recognized, install Docker Desktop for Windows and follow the
 
 If you prefer not to use Docker, install Node with nvm-windows: https://github.com/coreybutler/nvm-windows
 
+## Developer setup (Windows)
+
+This repository includes a unified PowerShell setup that configures your shell, installs global CLIs, and shares Playwright browser binaries across users.
+
+- Machine-wide (admin):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\enable-dev-shell.ps1 -MachineWide
+```
+
+- User-only:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\enable-dev-shell.ps1
+```
+
+- Install repo dependencies and Playwright browsers (idempotent):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-all-deps.ps1
+```
+
+Helpers live under `tools/`:
+
+- `tools/markitdown-mcp.js` – MCP wrapper for Markitdown (falls back to stub)
+- `tools/markitdown-mcp-stub.js` – local stub
+- `tools/playwright-check.js` – headless Chromium sanity check
+
+The shared Playwright browsers path is set to `C:\\ProgramData\\ms-playwright` so all repos/users reuse the same downloads.
+
+If you encounter PowerShell errors referencing `code --locate-shell-integration-path`, your `$PROFILE` is trying to call the VS Code CLI. The unified script will comment out that line when `code` isn’t in PATH.
+
+## 🧪 Quick tests
+
+- Playwright headless sanity:
+
+```powershell
+node .\tools\playwright-check.js
+```
+
+- MCP helpers:
+
+```powershell
+npm run mcp:playwright
+npm run mcp:notion -- --help
+npm run mcp:markitdown -- --help
+```
+
 ## Admin & public publishing (hardened workflow)
 
 This project includes an admin approval workflow to safely publish sanitized responses. Setup steps:

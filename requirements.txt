@@ -1,0 +1,11 @@
+# Python / system requirements for development environment
+# None required by Python for this repository currently.
+
+# Node / JS tooling (handled via package.json):
+# - playwright (devDependency) — installed via npm i -D playwright
+
+# Notes:
+# - Playwright requires additional browser binaries installed via `npx playwright install`.
+# - On Windows, native builds (e.g., better-sqlite3) may require Python and Visual C++ Build Tools.
+#   Install Visual Studio Build Tools: winget install --id Microsoft.VisualStudio.2022.BuildTools -e
+#   or install the "Desktop development with C++" workload.

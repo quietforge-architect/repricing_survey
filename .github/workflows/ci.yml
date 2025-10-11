@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -29,3 +29,8 @@ jobs:
     - name: Run lint/tests (no tests yet)
       run: |
         npm run tools:versions || true
+
+    - name: Validate exported JSON (if present)
+      run: |
+        npm run validate:exports
+

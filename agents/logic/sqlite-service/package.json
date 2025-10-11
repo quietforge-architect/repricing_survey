@@ -1,16 +1,17 @@
-{
-  "name": "sqlite-service",
-  "version": "1.0.0",
-  "main": "index.js",
-  "private": true,
-  "scripts": {
-    "start": "node index.js",
-    "init-db": "node init-db.js"
-  },
-  "dependencies": {
-    "better-sqlite3": "^9.5.0",
-    "body-parser": "^1.20.3",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2"
-  }
+﻿{
+    "name":  "sqlite-service",
+    "version":  "1.0.0",
+    "main":  "index.js",
+    "private":  true,
+    "scripts":  {
+                    "start":  "node index.js",
+                    "init-db":  "node init-db.js",
+                    "migrate:v1-to-v2": "node migrate-v1-to-v2.js"
+                },
+    "dependencies":  {
+                         "better-sqlite3":  "^9.5.0",
+                         "body-parser":  "^1.20.3",
+                         "dotenv":  "^16.4.5",
+                         "express":  "^4.19.2"
+                     }
 }

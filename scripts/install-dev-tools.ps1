@@ -44,6 +44,9 @@ function Get-CommandPath {
 $scriptRoot = $PSScriptRoot
 $repoRoot = Split-Path -Parent $scriptRoot
 Push-Location $repoRoot
+if (-not $env:TOOL_HOME) {
+  $env:TOOL_HOME = Join-Path $repoRoot 'tools'
+}
 try {
   Write-Host "== Dev tools bootstrap ==" -ForegroundColor Cyan
 
@@ -112,8 +115,13 @@ try {
   } else {
     Write-Warning "Unable to fetch Notion MCP package (exit code $LASTEXITCODE). Check your network before running MCP tasks."
   }
-
-  Write-Host "markitdown MCP is provided via scripts/markitdown-mcp.js. Replace the local stub with the vendor CLI when available."
+  # Prefer tools/ wrapper for markitdown
+  $localMarkitdown = Join-Path $env:TOOL_HOME 'markitdown-mcp.js'
+  if (Test-Path $localMarkitdown) {
+    Write-Host "markitdown MCP wrapper available at $localMarkitdown"
+  } else {
+    Write-Host "markitdown MCP helper is available at tools/markitdown-mcp.js. Replace the local stub with the vendor CLI when available."
+  }
 
   if ($InstallVSCodeExtensions) {
     $codeCmd = Get-Command code -ErrorAction SilentlyContinue
