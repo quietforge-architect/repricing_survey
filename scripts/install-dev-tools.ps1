@@ -1,29 +1,30 @@
 <#
 install-dev-tools.ps1
 
-Comprehensive, idempotent bootstrap for developer tooling used by this repo.
+Idempotent bootstrap for the developer tooling used by this repository.
 
-What it does (when run as Administrator or normal user where possible):
-- Ensures Node.js is installed (tries winget or suggests nvm-windows)
-- Ensures WSL/VirtualMachinePlatform features are present (prompts admin to enable)
-- Installs Playwright (devDependency) and downloads browsers
-- Installs uvx (markitdown) globally if possible (or uses npx fallback)
-- Pulls Notion MCP server via npx (no global install)
-- Optionally installs recommended VS Code extensions (if `code` CLI available)
+What this script covers:
+- Verifies Node.js is available (installs via winget when possible)
+- Installs npm dependencies for the repo
+- Ensures Playwright browsers are downloaded
+- Primes the Notion MCP server package via npx
+- Optionally installs recommended VS Code extensions
 
 Usage:
-  Run from repo root in pwsh. The script is idempotent and safe; it will only install missing items.
-
-  .\scripts\install-dev-tools.ps1 [-InstallVSCodeExtensions]
+  pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/install-dev-tools.ps1 [-InstallVSCodeExtensions]
 
 Notes:
- - Some steps require Administrator privileges (enabling Windows features, using winget install). The script will detect and print instructions when elevation is required.
- - The script attempts to be non-interactive where possible but will surface platform prompts (winget/MSI) when needed.
+- Some steps (winget installs) require Administrator privileges. When not elevated the script will instruct you on next actions.
+- The script prefers the Windows .cmd shims for npm/npx to avoid execution policy issues.
+- Network connectivity is required for npm and npx operations.
 #>
-
+[CmdletBinding()]
 param(
   [switch]$InstallVSCodeExtensions
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 function Test-Admin {
   $current = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -31,130 +32,110 @@ function Test-Admin {
   return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-Write-Host "== Dev tools bootstrap: checking environment =="
+function Get-CommandPath {
+  param([Parameter(Mandatory = $true)][string]$Name)
+  foreach ($candidate in @("$Name.cmd", "$Name.exe", $Name)) {
+    $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+  }
+  return $null
+}
 
-# Check for winget
-$haveWinget = (Get-Command winget -ErrorAction SilentlyContinue) -ne $null
-if ($haveWinget) { Write-Host "winget: available" } else { Write-Host "winget: not found" }
+$scriptRoot = $PSScriptRoot
+$repoRoot = Split-Path -Parent $scriptRoot
+Push-Location $repoRoot
+try {
+  Write-Host "== Dev tools bootstrap ==" -ForegroundColor Cyan
 
-# Check Node
-$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-if ($nodeCmd) {
-  Write-Host "node already installed: $(& node -v)"
-} else {
-  Write-Host "node not found. Attempting to install Node.js LTS via winget (if available)."
+  $haveWinget = $null -ne (Get-Command winget -ErrorAction SilentlyContinue)
   if ($haveWinget) {
-    if (-not (Test-Admin)) { Write-Warning "Installing system packages with winget requires Administrator. Re-run this script as Administrator to allow winget to install Node.js." }
-    try {
-      winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements --silent
-      if ($LASTEXITCODE -eq 0) {
-        Write-Host "winget installation requested. If an installer UI appeared, finish prompts and reopen a new shell."
-        # Verify Node installation
-        $nodeCheck = Get-Command node -ErrorAction SilentlyContinue
-        if ($nodeCheck) {
-          Write-Host "Node.js installed successfully via winget."
-        } else {
-          Write-Warning "Node.js installation via winget did not complete successfully. Please check for errors or install manually."
+    Write-Host "winget: available"
+  } else {
+    Write-Warning "winget CLI not found. Install Node.js manually or via scripts/install-node-nvm.ps1."
+  }
+
+  $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+  if (-not $nodeCmd) {
+    Write-Warning "Node.js not detected in PATH."
+    if ($haveWinget) {
+      if (Test-Admin) {
+        Write-Host "Attempting to install Node.js LTS via winget..."
+        try {
+          winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements --silent
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "winget Node.js install initiated. Complete any installer prompts then reopen your shell."
+          } else {
+            Write-Warning "winget returned exit code $LASTEXITCODE for Node.js install. Install manually if necessary."
+          }
+        } catch {
+          Write-Warning "winget Node.js installation failed: $_. Install Node.js manually or via nvm-windows."
         }
       } else {
-        Write-Warning "winget Node install failed with exit code $LASTEXITCODE. Consider installing nvm-windows or running the installer manually. See scripts/install-node-nvm.ps1"
+        Write-Warning "Re-run this script as Administrator to allow winget to install Node.js automatically."
       }
-    } catch {
-      Write-Warning "winget Node install failed: $_. Consider installing nvm-windows or running the installer manually. See scripts/install-node-nvm.ps1"
     }
-  } else {
-    Write-Warning "winget not available. Recommend installing nvm-windows (see scripts/install-node-nvm.ps1) and then 'nvm install 22.20.0; nvm use 22.20.0'"
   }
-}
 
-# Re-check Node availability
-$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
-if (-not $nodeCmd) {
-  Write-Warning "Node is still not available in this shell. Please restart your terminal or run the Node installer manually, then re-run this script. Exiting."
-  exit 1
-}
+  $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+  if (-not $nodeCmd) {
+    throw "Node.js is required but not available. Install Node.js then rerun this script."
+  }
 
-Write-Host "Node detected: $(& node -v)"
+  $nodeVersion = (& node -v)
+  Write-Host "Node detected: $nodeVersion"
 
-  Write-Host "Adding Playwright as devDependency and installing..."
-  try {
-    $npmPing = Invoke-WebRequest -Uri "https://registry.npmjs.org/" -UseBasicParsing -TimeoutSec 10
-    if ($npmPing.StatusCode -eq 200) {
-      npm install --save-dev playwright
-      if ($global:LASTEXITCODE -ne 0) { Write-Error "npm install failed with exit code $global:LASTEXITCODE"; exit 3 }
+  $npmExe = Get-CommandPath -Name 'npm'
+  if (-not $npmExe) { throw "npm executable not found in PATH." }
+  $npxExe = Get-CommandPath -Name 'npx'
+  if (-not $npxExe) { throw "npx executable not found in PATH." }
+
+  Write-Host "Installing project npm dependencies..."
+  & $npmExe 'install' '--no-audit' '--no-fund'
+  if ($LASTEXITCODE -ne 0) { throw "npm install failed with exit code $LASTEXITCODE" }
+
+  Write-Host "Ensuring Playwright browsers are installed (idempotent)..."
+  & $npxExe 'playwright' 'install'
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Playwright browser install returned exit code $LASTEXITCODE. Run 'npx playwright install' manually when network is available."
+  } else {
+    Write-Host "Playwright browsers ready."
+  }
+
+  Write-Host "Priming Notion MCP server package (npx --help)..."
+  & $npxExe '-y' '@notionhq/notion-mcp-server@latest' '--help' > $null 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "Notion MCP package is accessible via npx."
+  } else {
+    Write-Warning "Unable to fetch Notion MCP package (exit code $LASTEXITCODE). Check your network before running MCP tasks."
+  }
+
+  Write-Host "markitdown MCP is provided via scripts/markitdown-mcp.js. Replace the local stub with the vendor CLI when available."
+
+  if ($InstallVSCodeExtensions) {
+    $codeCmd = Get-Command code -ErrorAction SilentlyContinue
+    if ($codeCmd) {
+      $extensions = @(
+        'ms-vscode.vscode-typescript-next',
+        'msjsdiag.debugger-for-chrome',
+        'esbenp.prettier-vscode',
+        'dbaeumer.vscode-eslint'
+      )
+      foreach ($ext in $extensions) {
+        $installed = code --list-extensions | Where-Object { $_ -eq $ext }
+        if ($installed) {
+          Write-Host "VS Code extension already installed: $ext"
+        } else {
+          Write-Host "Installing VS Code extension: $ext"
+          code --install-extension $ext --force
+        }
+      }
     } else {
-      Write-Error "Unable to reach npm registry (status code $($npmPing.StatusCode)). Check your network connection."
-      exit 2
+      Write-Warning "VS Code 'code' CLI not found. Use the Command Palette -> 'Shell Command: Install 'code' command in PATH' to enable it."
     }
-  } catch {
-    Write-Error "Network check for npm registry failed: $_. Check your internet connection and try again."
-    exit 2
   }
-} catch {
-  Write-Warning "package.json not found or invalid. Playwright will be installed locally in node_modules if possible."
-  $pkg = $null
+
+  Write-Host "`nDev tooling bootstrap completed." -ForegroundColor Green
+  Write-Host "Open a new terminal if you just installed Node.js or VS Code CLI to refresh PATH."
+} finally {
+  Pop-Location
 }
-
-$hasPlaywright = $false
-if ($pkg -and $pkg.devDependencies -and $pkg.devDependencies.playwright) { $hasPlaywright = $true }
-if (-not $hasPlaywright) {
-# Install uvx (markitdown) globally if missing
-if ((Get-Command uvx -ErrorAction SilentlyContinue) -eq $null) {
-  Write-Host "uvx (markitdown) not found. Attempting to install via npm (global)."
-  if (-not (Test-Admin)) {
-    Write-Warning "Global install of uvx may require Administrator privileges. Re-run this script as Administrator for global install, or use 'npx uvx' as a fallback."
-    Write-Host "You can still use markitdown via: npx uvx ..."
-  } else {
-    try {
-      npm install -g uvx
-      if ($LASTEXITCODE -eq 0) {
-        Write-Host "uvx installed globally."
-      } else {
-        Write-Warning "Global install of uvx failed with exit code $LASTEXITCODE. You can use 'npx uvx' as a fallback."
-      }
-    } catch {
-      Write-Warning "Global install of uvx failed: $_. You can use 'npx uvx' as a fallback."
-    }
-  }
-} else { Write-Host "uvx already available" }
-
-# Install uvx (markitdown) globally if missing
-if ((Get-Command uvx -ErrorAction SilentlyContinue) -eq $null) {
-  Write-Host "uvx (markitdown) not found. Attempting to install via npm (global)."
-  try {
-npx -y @notionhq/notion-mcp-server@latest --help
-if ($global:LASTEXITCODE -eq 0) { Write-Host "Notion MCP package callable via npx" } else { Write-Warning "Notion MCP may require network to fetch via npx when first used" }
-  } catch {
-    Write-Warning "Global install of uvx failed or requires elevation. You'll still be able to invoke markitdown via npx."
-  }
-} else { Write-Host "uvx already available" }
-
-# Notion MCP server: we don't need a global install; npx will fetch it on run. Optionally pull it now.
-Write-Host "Pulling Notion MCP package via npx (dry-run --help)"
-npx -y @notionhq/notion-mcp-server@latest --help > $null 2>&1
-if ($LASTEXITCODE -eq 0) { Write-Host "Notion MCP package callable via npx" } else { Write-Warning "Notion MCP may require network to fetch via npx when first used" }
-
-# Optional: install recommended VS Code extensions
-if ($InstallVSCodeExtensions) {
-  if ((Get-Command code -ErrorAction SilentlyContinue) -ne $null) {
-    $extensions = @(
-      'ms-vscode.vscode-typescript-next',
-      'msjsdiag.debugger-for-chrome',
-      'esbenp.prettier-vscode',
-      'dbaeumer.vscode-eslint'
-    )
-    foreach ($ext in $extensions) {
-      $installed = code --list-extensions | Where-Object { $_ -eq $ext }
-      if ($installed) {
-        Write-Host "VS Code extension already installed: $ext"
-      } else {
-        Write-Host "Installing VS Code extension: $ext"
-        code --install-extension $ext --force
-      }
-    }
-Write-Host "`nBootstrap completed. If Node.js or any MSI-based installer was used, you may need to restart your terminal before continuing with remaining steps."
-    Write-Warning "VS Code 'code' CLI not found. To install extensions automatically, ensure 'code' is available in PATH ("Install 'code' command in PATH" from the Command Palette)."
-  }
-}
-
-Write-Host "\nBootstrap completed. If any install required a shell restart (Node/MSI), open a new terminal and re-run this script to continue remaining steps."

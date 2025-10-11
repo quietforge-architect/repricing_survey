@@ -13,7 +13,7 @@ param(
     [switch]$InstallDocker
 )
 
-function Test-Admin {
+function Test-IsAdmin {
     $current = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($current)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -48,7 +48,7 @@ try { wsl --status 2>&1 | Write-Host } catch { Write-Warning "wsl command not av
 
 # Suggest enabling features if missing
 if ($EnableFeatures) {
-    if (-not (Test-Admin)) {
+    if (-not (Test-IsAdmin)) {
         Write-Error "Enabling Windows features requires running this script elevated (Administrator). Restart PowerShell as Administrator and re-run with -EnableFeatures."
         exit 2
     }

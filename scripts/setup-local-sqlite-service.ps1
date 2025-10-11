@@ -16,7 +16,7 @@ try { & node -v > $null 2>&1 } catch { Write-Error "node not found in PATH. Inst
 Write-Host "Installing npm packages in sqlite-service..."
 Push-Location $servicePath
 npm install
-if ($LASTEXITCODE -ne 0) { Write-Error "npm install failed with exit code $LASTEXITCODE"; popd; exit 3 }
+if ($LASTEXITCODE -ne 0) { Write-Error "npm install failed with exit code $LASTEXITCODE"; Pop-Location; exit 3 }
 
 Write-Host "Running init-db..."
 npm run init-db
