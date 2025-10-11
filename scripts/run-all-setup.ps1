@@ -17,7 +17,6 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = $PSScriptRoot
 $repoRoot = Split-Path -Parent $scriptRoot
 Push-Location $repoRoot
-try {
 
 function Invoke-SetupStep {
   param(
@@ -33,8 +32,12 @@ function Invoke-SetupStep {
 
   Write-Host "== Running: $Name ==" -ForegroundColor Cyan
   try {
-    & $ScriptPath @Arguments
-    if ($LASTEXITCODE -ne 0) {
+    if ($Arguments -and ($Arguments | Measure-Object).Count -gt 0) {
+      & $ScriptPath @Arguments
+    } else {
+      & $ScriptPath
+    }
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
       throw "Exited with code $LASTEXITCODE"
     }
   } catch {
@@ -43,11 +46,23 @@ function Invoke-SetupStep {
   }
 }
 
+try {
+function Test-PythonAvailable {
+  foreach ($candidate in @('python', 'python3', 'py')) {
+    if (Get-Command $candidate -ErrorAction SilentlyContinue) { return $true }
+  }
+  return $false
+}
+
 $steps = @()
-$steps += [pscustomobject]@{
-  Name = 'Create Python venv'
-  Script = Join-Path $scriptRoot 'create-python-venv.ps1'
-  Args = if ($ForceVenv) { @('-Force') } else { @() }
+if (Test-PythonAvailable) {
+  $steps += [pscustomobject]@{
+    Name = 'Create Python venv'
+    Script = Join-Path $scriptRoot 'create-python-venv.ps1'
+    Args = if ($ForceVenv) { @('-Force') } else { @() }
+  }
+} else {
+  Write-Warning "Python 3 not detected; skipping virtual environment creation. Install Python and re-run with -ForceVenv if needed."
 }
 
 $installArgs = if ($InstallVSCodeExtensions) { @('-InstallVSCodeExtensions') } else { @() }
