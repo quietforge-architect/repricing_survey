@@ -16,5 +16,29 @@
     "category": "sheet-archive",
     "description": "Archive and rotate old survey responses monthly",
     "schedule": "monthly"
+  },
+  {
+    "id": "task-010",
+    "category": "repricer-research",
+    "description": "Maintain comparative matrix of Amazon repricers (features, pricing, integrations)",
+    "schedule": "monthly"
+  },
+  {
+    "id": "task-011",
+    "category": "repricer-feedback",
+    "description": "Publish and promote Amazon repricer feedback survey to seller communities",
+    "schedule": "once"
+  },
+  {
+    "id": "task-012",
+    "category": "repricer-feedback",
+    "description": "Ingest survey responses into local SQLite and dashboard weekly",
+    "schedule": "weekly"
+  },
+  {
+    "id": "task-013",
+    "category": "repricer-feedback",
+    "description": "Synthesize seller insights (general, repricing, AI, wishlist) and update strategy doc",
+    "schedule": "biweekly"
   }
 ]
