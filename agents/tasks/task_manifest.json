@@ -1,0 +1,20 @@
+[
+  {
+    "id": "task-001",
+    "category": "survey-sync",
+    "description": "Backup Google Sheet responses to Drive daily",
+    "schedule": "daily"
+  },
+  {
+    "id": "task-002",
+    "category": "html-audit",
+    "description": "Validate survey.html fields and schema weekly",
+    "schedule": "weekly"
+  },
+  {
+    "id": "task-003",
+    "category": "sheet-archive",
+    "description": "Archive and rotate old survey responses monthly",
+    "schedule": "monthly"
+  }
+]

@@ -172,6 +172,80 @@ This keeps your `/exec` link active and updated.
 | **404: URL not found** | You’re using the `/dev` endpoint instead of `/exec`. | Re-deploy → use the URL ending in `/exec` |
 | **403: Access denied** | “Who has access” not set to “Anyone.” | Redeploy with **Anyone with the link** access |
 | **No rows appear in Sheet** | Incorrect tab name (e.g., not “Sheet1”). | Update your script’s `getSheetByName("YourTabName")` |
+
+## Docker / Local verification (optional)
+
+If you want to verify Node in a clean container or on your local machine, this repo includes two helper PowerShell scripts in `scripts/`:
+
+- `scripts/verify-node-docker.ps1` — uses Docker to pull `node:22-alpine` and prints `node -v` and `npm -v` from inside the container. Requires Docker Desktop (Windows).
+- `scripts/verify-node-local.ps1` — checks `node -v` and `npm -v` on your local machine and writes a small report to `.reports/`.
+
+Run these in PowerShell (from the repo root):
+
+```powershell
+# Docker-based check (requires Docker Desktop)
+.\scripts\verify-node-docker.ps1
+
+# Local check (requires node in PATH)
+.\scripts\verify-node-local.ps1
+```
+
+If `docker` is not recognized, install Docker Desktop for Windows and follow the post-install steps to enable the CLI and WSL2 integration: https://www.docker.com/get-started
+
+If you prefer not to use Docker, install Node with nvm-windows: https://github.com/coreybutler/nvm-windows
+
+## Admin & public publishing (hardened workflow)
+
+This project includes an admin approval workflow to safely publish sanitized responses. Setup steps:
+
+1. Open the Apps Script editor for the deployed project (Extensions → Apps Script).
+2. Go to **Project Settings → Script properties** and add the following keys:
+   - `ADMIN_KEY` — a random secret string used to access admin actions.
+   - `COMPANY_ALLOWLIST` — optional comma-separated company names to preserve (e.g. `Quiet Forge,Acme Inc`).
+3. Deploy as Web App (Execute as: Me; Access: Anyone with the link).
+
+Admin interface usage:
+
+- List pending staging entries:
+  - Visit: `https://script.google.com/macros/s/AKfycbYourUniqueID/exec?adminKey=YOUR_ADMIN_KEY`
+- Approve an entry:
+  - Visit: `https://script.google.com/macros/s/AKfycbYourUniqueID/exec?adminKey=YOUR_ADMIN_KEY&action=approve&pubId=pub_...`
+- Reject an entry:
+  - Visit: `https://script.google.com/macros/s/AKfycbYourUniqueID/exec?adminKey=YOUR_ADMIN_KEY&action=reject&pubId=pub_...`
+
+When approved, the sanitized row moves from `PublicStaging` to `PublicResponses` and becomes visible to the public view.
+
+## Local SQLite service (optional)
+
+If you prefer a local-first workflow or want to run a lightweight local server for development, a small Express + SQLite service is included at `agents/logic/sqlite-service`.
+
+Quick start (from the repo root):
+
+```powershell
+# Install dependencies for the sqlite service
+cd agents/logic/sqlite-service
+npm install express better-sqlite3 body-parser dotenv
+
+# Initialize the DB
+npm run init-db
+
+# Start the service
+npm start
+
+# (Alternatively from repo root if you prefer) 
+cd ../../../
+npm run sqlite-service:start
+```
+
+Configuration:
+- Copy `.env.example` to `.env` inside `agents/logic/sqlite-service` and edit `DB_PATH`, `PORT`, and `COMPANY_ALLOWLIST` as needed.
+- Point `SURVEY_ENDPOINT` in `survey.html` to `http://localhost:3001/submit` for local testing.
+
+The service exposes:
+- `POST /submit` — accept submissions (saves raw + sanitized payload, status "pending").
+- `GET /public` — list approved sanitized entries (JSON).
+- `GET /approve/:id` — mark submission as approved (manual step for now).
+
 | **“Authorization required” popup** | Script not yet authorized. | Open the script → Run any function → Grant permissions |
 | **Duplicate submissions** | User refreshed after submission. | Add `form.reset()` and success alert (included in code) |
 | **Data mismatched to columns** | Sheet headers don’t match HTML `name=` fields. | Adjust headers or HTML names for exact match |
