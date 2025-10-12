@@ -6,7 +6,7 @@ import re
 import sqlite3
 import time
 from datetime import datetime
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 
 app = Flask(__name__)
 
@@ -17,6 +17,29 @@ conn.execute('PRAGMA foreign_keys = ON')
 
 ADMIN_TOKEN = os.getenv('API_ADMIN_TOKEN', '').strip()
 SUBMIT_TOKEN = os.getenv('API_SUBMIT_TOKEN', '').strip()
+
+# Allow configuring which origins can talk to the API. Defaults to '*' for now
+# In production you may want to set this to the specific GitHub Pages origin.
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*')
+
+# Simple CORS support: reply to OPTIONS preflight and add headers on all responses.
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        resp = make_response('', 204)
+        resp.headers['Access-Control-Allow-Origin'] = ALLOWED_ORIGINS
+        resp.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-Api-Key,X-Admin-Token,X-Submit-Token'
+        resp.headers['Access-Control-Max-Age'] = '3600'
+        return resp
+
+@app.after_request
+def add_cors(response):
+    # Ensure CORS headers are always present for browsers
+    response.headers.setdefault('Access-Control-Allow-Origin', ALLOWED_ORIGINS)
+    response.headers.setdefault('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    response.headers.setdefault('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Api-Key,X-Admin-Token,X-Submit-Token')
+    return response
 
 # Ensure v2 schema exists
 def ensure_schema_v2():

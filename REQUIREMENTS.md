@@ -1,61 +1,55 @@
-Project requirements and quick install
+# System Requirements
 
-# System prerequisites
+- Windows 10/11 (WSL2 optional but recommended for Docker Desktop)
+- 8 GB RAM minimum, virtualization enabled in BIOS/UEFI
 
-- Windows 10/11 (with WSL2 if you plan to use Docker Desktop WSL backend)
-- Recommended: 8+ GB RAM, virtualization enabled in BIOS/UEFI
+## Core Tooling
 
-## Tooling (local dev)
+| Tool        | Installation Notes                                                                                                   |
+|-------------|------------------------------------------------------------------------------------------------------------------------|
+| Node.js LTS | Install with `winget install --id OpenJS.NodeJS.LTS -e` or via [nvm-windows](https://github.com/coreybutler/nvm-windows) |
+| npm         | Bundled with Node                                                                                                     |
+| PowerShell  | All helper scripts assume PowerShell (`pwsh`)                                                                         |
+| Docker      | Optional. Required only if you plan to run the nginx bundle or Railway-style deployments                              |
 
-- Node.js LTS (22.x or 24.x) — install via winget or nvm-windows
+After installing Node, fetch project dependencies with:
 
-  - winget:
+```powershell
+npm ci
+```
 
-    ```powershell
-    winget install --id OpenJS.NodeJS.LTS -e
-    ```
+## Recommended Dev Packages
 
-  - nvm-windows: https://github.com/coreybutler/nvm-windows/releases
+- **Playwright** (browser automation)
 
-- npm (bundled with Node)
+  ```bash
+  npm i -D playwright
+  npx playwright install
+  ```
 
-- Docker Desktop (optional, for containerized runs) — https://www.docker.com/get-started
+- **markitdown MCP helper**
 
-- PowerShell (pwsh) — for provided helper scripts
+  ```bash
+  npx -y markitdown-mcp
+  ```
 
-## Dev packages (repo-level)
-
-- Playwright (for browser automation and audits)
-
-  - Install via npm:
-
-    ```bash
-    npm i -D playwright
-    ```
-
-  - Install browsers:
-
-    ```bash
-    npx playwright install
-    ```
-
-- markitdown (CLI) — available via `uvx markitdown-mcp` or via `npx`
-
-- Notion MCP server (for integration testing) — available via:
+- **Notion MCP server**
 
   ```bash
   npx -y @notionhq/notion-mcp-server@latest
   ```
 
-  Tooling location:
+## Spell Checking
 
-  - The repository now includes a `tools/` folder for small helper wrappers and stubs (e.g. `tools/markitdown-mcp.js`).
-  - Scripts will set `TOOL_HOME` to the repo `tools/` folder by default. To move these helpers to a machine-wide location (e.g. `C:\\Program Files\\dev-tools`), create the folder, copy the files, and set the system environment variable `TOOL_HOME` to that path (requires admin).
+Custom dictionaries live in `cspell.json`. Run spot checks with:
 
-## How to set up local sqlite-service
+```powershell
+npx cspell --config cspell.json README.md
+```
 
-1) Install Node/npm
-2) From repo root:
+Add Amazon terminology to `"words"` and engineering jargon to `"userWords"` so editors stop flagging expected vocabulary.
+
+## Local sqlite-service (optional API)
 
 ```powershell
 cd agents\logic\sqlite-service
@@ -64,12 +58,15 @@ npm run init-db
 npm start
 ```
 
-## CI notes
+Create `.env` from `.env.example` to configure `DB_PATH`, `PORT`, `API_ADMIN_TOKEN`, `API_SUBMIT_TOKEN`, and `COMPANY_ALLOWLIST`.
 
-- `Dockerfile` provides a reproducible build image that runs the smoke suite and ships the static bundle via nginx.
-- `.github/workflows/pages.yml` deploys the sanitized `dist/` bundle to GitHub Pages while refusing commits that contain contact data in `public/export/`.
-- The included GitHub Actions workflow (see `.github/workflows/ci.yml`) installs Node, runs `npm ci`, and installs Playwright browsers.
+## CI and Deploy
 
-## Security
+- `Dockerfile.api` packages the Flask service, installs requirements, and runs under gunicorn.
+- `.github/workflows/deploy-survey.yml` builds the offline bundle and publishes to GitHub Pages, automatically setting `SURVEY_URL`.
+- `.nixpacks/config.toml` ensures `python -m pip install …` is available during Railway builds.
 
-- The project stores survey data privately and only publishes sanitized responses after admin approval. Keep your `ADMIN_KEY` and any Notion tokens or secrets out of source control; use Actions secrets or Script Properties.
+## Security Notes
+
+- Never commit raw submissions, SQLite databases, or exports containing contact information.
+- Keep `API_ADMIN_TOKEN`, `API_SUBMIT_TOKEN`, Notion credentials, and Apps Script `ADMIN_KEY` values in private secret stores (GitHub Secrets, Railway variables, Script Properties, etc.).

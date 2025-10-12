@@ -1,352 +1,154 @@
-# repricing_survey
-# 🦖 Amazon Repricing Feedback Survey
+# Amazon Repricing Survey
 
-A lightweight, privacy-friendly feedback form designed for Amazon sellers to share insights on repricing tools and Keepa usage.  
-Built for local-first data collection and easy integration with Google Sheets — no backend server required.
-
----
-
-## 📦 Overview
-
-This project is a **static HTML survey** that sends form responses directly to a **Google Sheets endpoint** via **Google Apps Script**.  
-It’s perfect for gathering structured, anonymized seller feedback to inform repricer or data-model development.
+A lightweight, privacy-conscious feedback survey designed for independent and full-time Amazon booksellers.  
+The project delivers a 20-question, four-page experience with humor-forward copy, offline resilience, and multiple deployment targets (static hosting, GitHub Pages, or a hardened Python API).
 
 ---
 
-## 🧩 Architecture
+## What’s Inside
 
-```plaintext
-survey.html (frontend form)
-     ↓  POST request
-Google Apps Script (doPost handler)
-     ↓
-Google Sheet (data storage)
-```
-
-- **Frontend:** Pure HTML, CSS, JavaScript (mobile-optimized)
-- **Backend:** Google Apps Script (public Web App endpoint)
-- **Storage:** Google Sheets (auto-logging, timestamped entries)
-- **Persistence:** Client-side localStorage (users don’t lose progress)
+- **Survey flow:** 20 prompts split across four themed pages (bookseller basics, workflow, experiments, wishlist).
+- **Offline bundle:** `npm run build:offline` produces `dist/` with service worker, manifest, and a QR splash card. The QR code defaults to `https://quietforgedev.github.io/amazon-repricing-survey/` unless you override `SURVEY_URL`.
+- **Local-first API:** Optional Flask/Express hybrid service (`agents/logic/sqlite-service`) stores submissions, redacts PII, and exposes admin-only summary endpoints.
+- **Admin tooling:** Google Apps Script workflow with staging + approval, plus local Playwright runs for regression testing.
+- **Spell-check alignment:** `cspell.json` separates Amazon domain terms from engineering jargon so editors stop flagging niche vocabulary.
 
 ---
 
-## 🚀 Quick Start
+## Repository Tour
 
-### 1️⃣ Clone or Download
+| Path                               | Purpose                                                       |
+|------------------------------------|---------------------------------------------------------------|
+| `survey/`                          | Production HTML/CSS/JS (multi-page survey)                    |
+| `tools/build-offline-survey.js`    | Offline bundle + QR generator (guards against localhost URLs) |
+| `schema/survey_questions.yaml`     | Canonical question bank (source for generated schemas)        |
+| `docs/field_reference.md`          | Human-readable field dictionary (kept in sync with the YAML)  |
+| `agents/logic/sqlite-service/`     | Optional API (Flask + better-sqlite3)                         |
+| `docs/legacy/`                     | Archived v1 question bank and references                      |
+| `cspell.json`                      | Repository-wide dictionary configuration                      |
+
+---
+
+## Quick Start (Frontend)
+
 ```bash
 git clone https://github.com/QuietForgeDev/amazon-repricing-survey.git
 cd amazon-repricing-survey
+npm ci
+npm run preview
 ```
 
-or simply download `survey.html` if you’re not using Git.
+Open the logged URL (default `http://localhost:4173`) and edit files under `survey/`. The preview server auto-reloads HTML, CSS, JS, and manifest changes.
 
----
+When you are ready to ship:
 
-### 2️⃣ Create the Google Sheet
-
-1. In Google Drive → **New → Google Sheets**
-2. Name it `Amazon_Repricing_Feedback_Responses`
-3. Paste this into the first row (A1):
-   ```text
-   Timestamp	experience	sku_count	model	repricer	keepa	satisfaction	painpoint	glitch	glitch_details	ai_used	ai_improvement	trust_ai	trust_ai_reason	missing_data	trust_features	local_tool	privacy	anon_data	feature_request	monitoring	contact
-   ```
-   *(Each word separated by tabs — it will auto-expand into columns.)*
-
----
-
-### 3️⃣ Set Up Google Apps Script
-
-#### a. Open Script Editor
-**Extensions → Apps Script**
-
-#### b. Paste This Code
-```javascript
-function doPost(e) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
-  const params = e.parameter;
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const row = [new Date()];
-  headers.slice(1).forEach(h => row.push(params[h] || ""));
-  sheet.appendRow(row);
-  return ContentService.createTextOutput("✅ Success").setMimeType(ContentService.MimeType.TEXT);
-}
+```bash
+npm run build:offline
 ```
 
-#### c. Save & Deploy
-- **Deploy → New deployment → Web app**
-  - **Execute as:** Me (your account)
-  - **Who has access:** Anyone with the link
-- Copy your **Web App URL** (should end in `/exec`).
+The command regenerates `dist/`, including the QR splash card, service worker, and manifest.  
+The script refuses to build if `SURVEY_URL` still points at `localhost`, helping you avoid broken QR codes in production collateral.
 
 ---
 
-### 4️⃣ Connect Your HTML Form
+## Survey Content at a Glance
 
-In `survey.html`, update the form action:
+| Page                              | Focus                                             | Example prompts                                                                    |
+|-----------------------------------|---------------------------------------------------|-------------------------------------------------------------------------------------|
+| Shelf Life & Seller Lore          | Bookseller background                             | Years selling, commitment level, weekly hours, sourcing habits                     |
+| Daily Rituals & Tooling           | Day-to-day workflows                              | Listing cadence, repricing stack, signal menu, inventory anxiety                    |
+| Risk, Glitches & Experiments      | Lessons learned + appetite for tinkering          | Risk posture, memorable glitches, safety nets, experimentation cadence              |
+| Wishlist, Community & Follow-up   | Dream features, AI trust, community interest      | Genie wish, AI trust temperature, community appetite, privacy rating, contact opt-in|
 
-```html
-<form id="surveyForm" action="https://script.google.com/macros/s/AKfycbYourUniqueID/exec" method="POST">
+The question copy – including “other” follow-up prompts – lives in `schema/survey_questions.yaml`.  
+Run `npm run schema:generate` to refresh derived JSON once you modify the YAML.
+
+---
+
+## Tooling & QA
+
+| Command                              | Description                                                             |
+|--------------------------------------|-------------------------------------------------------------------------|
+| `npm run preview`                    | Live development server (no service worker caching)                     |
+| `npm run build:offline`              | Production bundle + QR splash card                                      |
+| `npm run test:smoke`                 | Schema check, DB init, sample imports, sanitized export validation      |
+| `npm run test:fill-survey`           | Headless Playwright form submission (local collector)                   |
+| `npm run test:fill-survey:headful`   | Interactive Playwright run (useful for debugging page flow)             |
+| `npx cspell --config cspell.json README.md` | Spot-check spelling using the repo dictionaries                 |
+
+The spell-check configuration intentionally keeps Amazon vocabulary (ASIN, Keepa, BQool, etc.) separate from engineering terms (Nixpacks, gunicorn, networkidle) so VS Code’s Problems panel stays actionable.
+
+---
+
+## Deploying the Static Bundle
+
+### GitHub Pages (PII-safe)
+
+1. Run `npm run workflow -- --mode agent` to rebuild the offline bundle and sanitize exports.
+2. Commit the updated `dist/` artifacts plus sanitized JSON in `public/export/`.
+3. Push to `main`. `.github/workflows/deploy-survey.yml` runs `npm ci`, calls `npm run build:offline`, and publishes to GitHub Pages. The workflow injects `SURVEY_URL` with your Pages host so the QR card and manifest stay accurate.
+4. Verify the URL printed by the workflow (e.g. `https://<owner>.github.io/<repo>/`).
+
+### Netlify / Static Hosts
+
+Drag the `dist/` folder (or `survey/` for a simpler static version) to your provider of choice.  
+If you override `SURVEY_URL`, rebuild via:
+
+```bash
+SURVEY_URL="https://events.example.org/repricing" npm run build:offline
 ```
 
-Save the file.
+### Railway / Container Apps
+
+- Backend image lives in `Dockerfile.api`.
+- Required environment variables: `API_ADMIN_TOKEN`, `API_SUBMIT_TOKEN`, optional `COMPANY_ALLOWLIST`.
+- `.nixpacks/config.toml` installs Python 3.12 and pip via `python -m pip install …`; deployments fail fast if tokens are blank or if `pip` is missing.
 
 ---
 
-### 5️⃣ Host the Form
+## Local API Service
 
-#### 🪶 Option A — Netlify (recommended)
-1. Visit [https://app.netlify.com/drop](https://app.netlify.com/drop)
-2. Drag and drop `survey.html`
-3. You’ll instantly get a live URL like `https://your-survey.netlify.app`
-
-#### 💾 Option B — GitHub Pages
-1. Commit `survey.html` to a repo  
-2. Go to **Settings → Pages → Branch = main → Save**  
-3. Get your public URL: `https://username.github.io/repo-name/`
-
-#### 🧠 Option C — Google Hosting
-If you want everything inside Google:
-1. Create a new Apps Script project
-2. Add:
-   ```javascript
-   function doGet() {
-     return HtmlService.createHtmlOutputFromFile('Index');
-   }
-   ```
-3. Create `Index.html` (paste survey HTML)
-4. Deploy → Web app → Anyone with link
-
----
-
-## 💡 Features
-
-| Feature | Description |
-|----------|-------------|
-| **Offline resilience** | Form progress autosaves to `localStorage` |
-| **Direct-to-Sheet pipeline** | No middleware required |
-| **Mobile-friendly UI** | Designed for quick use at events |
-| **Anonymous-friendly** | No login or cookies |
-| **Expandable schema** | Add new fields easily (just add matching column headers) |
-
-## Editing Survey Questions
-
-- Use `schema/survey_questions.yaml` as the canonical question bank. Propose copy or option tweaks there so reviewers can diff changes without touching the live form.
-- Once the YAML looks right, mirror the updates into `survey/index.html` (inputs, placeholders, required flags) and keep the YAML in the same commit.
-- Run `npm run schema:generate` to refresh `schema/survey_schema.json` for automated checks and downstream tooling.
-- Smoke test edits with `npm run preview` for a visual pass and `npm run test:fill-survey` if you need an automated interaction check.
-- Link to the YAML changes in review threads so non-technical collaborators can comment before the survey markup ships.
-
----
-
-## 🧰 Config & Maintenance
-
-### ⚙️ Apps Script Settings
-| Setting | Recommended |
-|----------|--------------|
-| Execute as | *Me (your account)* |
-| Access | *Anyone with the link* |
-| Sheet name | “Sheet1” or your tab name |
-| Endpoint | Always use `/exec` (not `/dev`) |
-
-### 🧼 Re-deploying After Edits
-If you change your script:
-> **Deploy → Manage deployments → Edit (pencil icon) → Update version**
-
-This keeps your `/exec` link active and updated.
-
----
-
-## 🧠 Developer Notes
-
-- The form saves progress on every keystroke; throttling prevents lag.  
-- Scripts use ARIA live regions for accessibility and mobile usability.  
-- The Sheet automatically timestamps new entries in column A.
-
----
-
-## 🧱 Future Enhancements
-
-- [ ] Add automatic header creation in Apps Script  
-- [ ] Add optional logging sheet for debugging  
-- [ ] Integrate visualization dashboard via Looker Studio  
-- [ ] Add multilingual support  
-
----
-
-## 🧩 Quick Troubleshooting
-
-| Error / Symptom | Likely Cause | Solution |
-|------------------|--------------|-----------|
-| **404: URL not found** | You’re using the `/dev` endpoint instead of `/exec`. | Re-deploy → use the URL ending in `/exec` |
-| **403: Access denied** | “Who has access” not set to “Anyone.” | Redeploy with **Anyone with the link** access |
-| **No rows appear in Sheet** | Incorrect tab name (e.g., not “Sheet1”). | Update your script’s `getSheetByName("YourTabName")` |
-
-## Docker / Local verification (optional)
-
-If you want to verify Node in a clean container or on your local machine, this repo includes two helper PowerShell scripts in `scripts/`:
-
-- `scripts/verify-node-docker.ps1` — uses Docker to pull `node:22-alpine` and prints `node -v` and `npm -v` from inside the container. Requires Docker Desktop (Windows).
-- `scripts/verify-node-local.ps1` — checks `node -v` and `npm -v` on your local machine and writes a small report to `.reports/`.
-
-Run these in PowerShell (from the repo root):
+The sqlite-backed API under `agents/logic/sqlite-service` is useful for demos, local-first workflows, or data-entry kiosks.
 
 ```powershell
-# Docker-based check (requires Docker Desktop)
-.\scripts\verify-node-docker.ps1
-
-# Local check (requires node in PATH)
-.\scripts\verify-node-local.ps1
-```
-
-If `docker` is not recognized, install Docker Desktop for Windows and follow the post-install steps to enable the CLI and WSL2 integration: https://www.docker.com/get-started
-
-If you prefer not to use Docker, install Node with nvm-windows: https://github.com/coreybutler/nvm-windows
-
-## Developer setup (Windows)
-
-This repository includes a unified PowerShell setup that configures your shell, installs global CLIs, and shares Playwright browser binaries across users.
-
-- Machine-wide (admin):
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\enable-dev-shell.ps1 -MachineWide
-```
-
-- User-only:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\enable-dev-shell.ps1
-```
-
-- Install repo dependencies and Playwright browsers (idempotent):
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-all-deps.ps1
-```
-
-Helpers live under `tools/`:
-
-- `tools/markitdown-mcp.js` – MCP wrapper for Markitdown (falls back to stub)
-- `tools/markitdown-mcp-stub.js` – local stub
-- `tools/playwright-check.js` – headless Chromium sanity check
-
-The shared Playwright browsers path is set to `C:\\ProgramData\\ms-playwright` so all repos/users reuse the same downloads.
-
-If you encounter PowerShell errors referencing `code --locate-shell-integration-path`, your `$PROFILE` is trying to call the VS Code CLI. The unified script will comment out that line when `code` isn’t in PATH.
-
-## 🧪 Quick tests
-
-- Playwright headless sanity:
-
-```powershell
-node .\tools\playwright-check.js
-```
-
-- MCP helpers:
-
-```powershell
-npm run mcp:playwright
-npm run mcp:notion -- --help
-npm run mcp:markitdown -- --help
-```
-
-## Admin & public publishing (hardened workflow)
-
-This project includes an admin approval workflow to safely publish sanitized responses. Setup steps:
-
-1. Open the Apps Script editor for the deployed project (Extensions → Apps Script).
-2. Go to **Project Settings → Script properties** and add the following keys:
-   - `ADMIN_KEY` — a random secret string used to access admin actions.
-   - `COMPANY_ALLOWLIST` — optional comma-separated company names to preserve (e.g. `Quiet Forge,Acme Inc`).
-3. Deploy as Web App (Execute as: Me; Access: Anyone with the link).
-
-Admin interface usage:
-
-- List pending staging entries:
-  - Visit: `https://script.google.com/macros/s/AKfycbYourUniqueID/exec?adminKey=YOUR_ADMIN_KEY`
-- Approve an entry:
-  - Visit: `https://script.google.com/macros/s/AKfycbYourUniqueID/exec?adminKey=YOUR_ADMIN_KEY&action=approve&pubId=pub_...`
-- Reject an entry:
-  - Visit: `https://script.google.com/macros/s/AKfycbYourUniqueID/exec?adminKey=YOUR_ADMIN_KEY&action=reject&pubId=pub_...`
-
-When approved, the sanitized row moves from `PublicStaging` to `PublicResponses` and becomes visible to the public view.
-
-## Local SQLite service (optional)
-
-If you prefer a local-first workflow or want to run a lightweight local server for development, a small Express + SQLite service is included at `agents/logic/sqlite-service`.
-
-Quick start (from the repo root):
-
-```powershell
-# Install dependencies for the sqlite service
-cd agents/logic/sqlite-service
-npm install express better-sqlite3 body-parser dotenv
-
-# Initialize the DB
+cd agents\logic\sqlite-service
+npm install
 npm run init-db
-
-# Start the service
 npm start
-
-# (Alternatively from repo root if you prefer) 
-cd ../../../
-npm run sqlite-service:start
 ```
 
-Configuration:
-- Copy `.env.example` to `.env` inside `agents/logic/sqlite-service` and edit `DB_PATH`, `PORT`, and `COMPANY_ALLOWLIST` as needed.
-- Point `SURVEY_ENDPOINT` in `survey.html` to `http://localhost:3001/submit` for local testing.
+Create `.env` (copy `.env.example`) and set:
 
-The service exposes:
-- `POST /submit` — accept submissions (saves raw + sanitized payload, status "pending").
-- `GET /public` — list approved sanitized entries (JSON).
-- `GET /approve/:id` — mark submission as approved (manual step for now).
+```
+DB_PATH=../../../db/survey.sqlite
+PORT=3001
+COMPANY_ALLOWLIST=Quiet Forge,Acme Inc
+API_ADMIN_TOKEN=local-admin-secret
+API_SUBMIT_TOKEN=local-submit-token
+```
 
-| **“Authorization required” popup** | Script not yet authorized. | Open the script → Run any function → Grant permissions |
-| **Duplicate submissions** | User refreshed after submission. | Add `form.reset()` and success alert (included in code) |
-| **Data mismatched to columns** | Sheet headers don’t match HTML `name=` fields. | Adjust headers or HTML names for exact match |
-| **“CORS” error (rare)** | Some browsers block POST from `file://` URLs. | Host on Netlify or GitHub Pages — not opened from disk |
-| **Old data persisting** | localStorage not cleared after submission. | Confirm `localStorage.removeItem('surveyFormData')` in code |
-| **Still no data?** | Wrong endpoint or unapproved permissions. | Check **Apps Script → Executions** for error logs |
+Endpoints:
+
+| Method | Path                  | Notes                                                         |
+|--------|-----------------------|---------------------------------------------------------------|
+| POST   | `/submit`             | Accepts JSON or form data, requires `X-Submit-Token` header   |
+| GET    | `/api/v2/responses`   | Admin-only, requires `X-Admin-Token`                          |
+| GET    | `/api/v2/summary`     | Admin-only aggregate stats                                    |
+| GET    | `/api/health`         | Simple health probe                                           |
+
+The service redacts emails, phone numbers, and address-like content unless the value matches the configured company allow list. Contact information remains optional in the survey and is stored in a dedicated field for explicit outreach consent.
 
 ---
 
-## 🪪 License
-MIT License — free to use, modify, and share.  
-Copyright © 2025  
-**Quiet Forge Development Studio**
+## Development Notes
+
+- **Spell checking:** `cspell.json` provides shared dictionaries. Add Amazon-specific words to `words`, tooling jargon to `userWords`.
+- **Docs:** The latest field dictionary lives in `docs/field_reference.md`. Legacy v1 content resides in `docs/legacy/`.
+- **Redeploy trigger:** Touch `redeploy-trigger.txt` when you need to force a downstream redeploy (Railway/GitHub Pages).
+
 ---
 
-## Live Preview & Testing Workflow
+## License
 
-- `npm run preview` starts a live server at `http://localhost:4173` with automatic reloads for HTML, CSS, JS, and manifest edits. Service worker registration is skipped while previewing locally so changes always appear immediately.
-- `npm run build:offline` rebuilds the production-ready `dist/` directory, including the service worker cache, manifest, and QR splash card.
-- `npm run workflow` opens an interactive menu with shortcuts for the live preview, offline bundle build, and Playwright smoke test. Jump straight in with `npm run workflow -- --mode human` (preview) or `npm run workflow -- --mode agent` (offline build + smoke test).
-
-## Containerized Hosting
-
-To serve the static bundle from a hardened image, build the multi-stage container and run it behind your own ingress or CDN:
-
-```bash
-docker build -t repricing-survey .
-docker run --rm -p 8080:80 -e SURVEY_URL="https://your-domain.example/survey" repricing-survey
-```
-
-The image compiles native dependencies, runs the smoke suite (which generates sanitized exports), and serves the `dist/` bundle with nginx. Override `SURVEY_URL` at build time if you need the offline splash card and manifest to point at your production hostname:
-
-```bash
-docker build --build-arg SURVEY_URL="https://events.example.org/repricing" -t repricing-survey:prod .
-```
-
-## GitHub Pages Deployment (PII-Safe)
-
-A dedicated workflow (`.github/workflows/pages.yml`) builds `dist/` and publishes it to GitHub Pages without bundling any responses. The job intentionally fails if a checked-in file under `public/export/` still contains contact fields or e-mail patterns.
-
-To publish safely:
-
-1. Run `npm run workflow -- --mode agent` locally to refresh sanitized exports and confirm tests pass.
-2. If you ingest new survey data, regenerate public exports with `npm run export:safe:db` (or `npm run export:safe` for CSV input). Only commit the scrubbed JSON files in `public/export/`.
-3. Push to `main`. The `Deploy Pages` workflow installs build prerequisites, runs `npm ci`, calls `npm run build:offline`, and deploys the artifact to the `github-pages` environment. The action sets `SURVEY_URL` to the Pages hostname so your QR card and manifest stay accurate.
-4. Verify the site at the URL printed by the workflow (`https://<owner>.github.io/<repo>/`). If you are using a user/organisation page (`<owner>.github.io`), the workflow automatically falls back to the root domain.
-
-Keep raw submissions (`agents/logic/local-collector/data/submissions.csv`), SQLite snapshots (`db/survey.sqlite`), and any temporary exports out of git; the `.dockerignore` and `.gitignore` entries already prevent accidental commits. Only sanitized aggregates should reach GitHub Pages.
+MIT License © 2025 Quiet Forge Development Studio.  
+Contributions, forks, and remixing are encouraged—please keep PII out of committed artifacts.

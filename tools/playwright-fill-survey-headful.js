@@ -32,9 +32,43 @@ async function humanDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function runHeadful() {
   const { chromium } = require('playwright');
-  const browser = await chromium.launch({ headless: false, slowMo: 500 }); // Headful with slow for visibility
+  const slowMo = parseInt(process.env.SLOW_MO || process.env.SLOWMO || '500', 10) || 500;
+  const browser = await chromium.launch({ headless: false, slowMo }); // Headful with configurable slow for visibility
   const page = await browser.newPage();
-  const pageUrl = `https://quietforge-architect.github.io/repricing_survey/index.html`; // Updated to live GitHub Pages survey
+
+  // Network logging: capture request/response metadata and small bodies to tmp/playwright-network-log.json
+  const networkEvents = [];
+  const maxBodyChars = 10000; // cap body size to keep logs small
+
+  page.on('request', req => {
+    networkEvents.push({
+      type: 'request',
+      timestamp: Date.now(),
+      id: req._guid || undefined,
+      method: req.method(),
+      url: req.url(),
+      headers: req.headers(),
+      postData: (() => { try { return req.postData(); } catch(e){ return undefined } })(),
+    });
+  });
+
+  page.on('response', async res => {
+    try {
+      const text = await res.text();
+      networkEvents.push({
+        type: 'response',
+        timestamp: Date.now(),
+        url: res.url(),
+        status: res.status(),
+        statusText: res.statusText(),
+        headers: res.headers(),
+        body: text ? (text.length > maxBodyChars ? text.slice(0, maxBodyChars) + '\n---BODY-TRUNCATED---' : text) : undefined,
+      });
+    } catch (e) {
+      networkEvents.push({ type: 'response', timestamp: Date.now(), url: res.url(), status: res.status(), error: String(e) });
+    }
+  });
+  const pageUrl = process.env.PAGE_URL || `https://quietforge-architect.github.io/repricing_survey/index.html`; // allow overriding to local static server
   console.log('[headful] opening', pageUrl);
   await page.goto(pageUrl);
   console.log('[headful] page loaded');
@@ -117,6 +151,17 @@ async function runHeadful() {
   await page.waitForTimeout(2000); // Increased for headful
   // leave browser open a few seconds so user can inspect if needed
   await page.waitForTimeout(3000); // Increased
+  // write networkEvents to tmp file for debugging
+  try {
+    const outDir = path.join(projectRoot, 'tmp');
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+    const outFile = path.join(outDir, 'playwright-network-log.json');
+    fs.writeFileSync(outFile, JSON.stringify(networkEvents, null, 2), 'utf8');
+    console.log('[headful] wrote network log to', outFile);
+  } catch (e) {
+    console.error('[headful] failed to write network log', e);
+  }
+
   await browser.close();
   console.log('[headful] test completed');
 }
@@ -125,6 +170,19 @@ async function main() {
   // updateFormAction(`http://localhost:${collectorPort}/submit`); // commented for live testing
   // const staticSrv = startStaticServer(); // commented for live testing
   // await new Promise(r => setTimeout(r, 700));
+  // If requested, update the survey form action in the local copy so the browser will post to the local API.
+  if (process.env.USE_LOCAL_ACTION === '1') {
+    try {
+      const htmlPath = path.join(projectRoot, 'survey', 'index.html');
+      let html = fs.readFileSync(htmlPath, 'utf8');
+      html = html.replace(/data-action\s*=\s*"[^"]+"/, `data-action="http://localhost:3001/submit"`);
+      fs.writeFileSync(htmlPath, html, 'utf8');
+      console.log('[headful] updated local survey form action to http://localhost:3001/submit');
+    } catch (e) {
+      console.error('[headful] failed to update local form action', e);
+    }
+  }
+
   try {
     await runHeadful();
   } catch (e) { console.error('[headful] error', e); }

@@ -1,22 +1,3 @@
 {
-  "cSpell.words": [
-    "amet",
-    "certifi",
-    "coloredlogs",
-    "convo",
-    "Gaylords",
-    "Keepa",
-    "millis",
-    "networkidle",
-    "Neuroprice",
-    "Playwright",
-    "qrcode",
-    "repricer",
-    "repricers",
-    "repricing",
-    "SKU",
-    "SKUs",
-    "SQLite",
-    "thoughtform"
-  ]
+  "cSpell.configFile": "cspell.json"
 }
