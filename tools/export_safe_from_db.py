@@ -12,7 +12,7 @@ import json
 import os
 import sqlite3
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 
 BASE = os.path.dirname(__file__)
 # Resolve DB path: prefer env DB_PATH or SURVEY_DB_PATH, else db/survey.sqlite, else legacy path
@@ -124,7 +124,7 @@ def aggregate(conn, responses):
     features = features_counts(conn, responses)
 
     summary = {
-        'generatedAt': datetime.utcnow().isoformat() + 'Z',
+        'generatedAt': datetime.now(timezone.utc).isoformat(),
         'totalResponses': len(responses),
         'byExperience': dict(by_experience),
         'avgSatisfaction': round(sat_sum / sat_count, 2) if sat_count else None,

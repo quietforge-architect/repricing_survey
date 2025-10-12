@@ -10,6 +10,9 @@
                     "tools:versions":  "node -v \u0026\u0026 npm -v \u0026\u0026 npx --version || true",
                     "install-playwright-browsers":  "npx playwright install",
                     "mcp:playwright":  "node ./tools/playwright-mcp.js",
+                    "test:fill-survey": "node ./tools/playwright-fill-survey.js",
+                    "test:fill-survey:headful": "node ./tools/playwright-fill-survey-headful.js",
+                    "test:stress-survey": "node ./tools/playwright-stress-survey.js",
                     "mcp:notion":  "node ./tools/notion-mcp.js",
                     "mcp:markitdown":  "node ./tools/markitdown-mcp.js",
                     "export:safe":  "node tools/export-safe-data.js",
@@ -25,7 +28,8 @@
                     "export:typed:db": "python tools/export_typed_from_db.py",
                     "db:all": "python tools/db_manager.py init && python tools/db_manager.py export_typed && node tools/validate-exports.js && node tools/spec_validate.js",
                     "db:backup": "python tools/db_manager.py backup",
-                    "validate:specs": "node tools/spec_validate.js"
+                    "validate:specs": "node tools/spec_validate.js",
+                    "test:smoke": "node tools/smoke-test.js"
                 },
     "dependencies":  {
 

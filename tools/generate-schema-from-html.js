@@ -10,6 +10,16 @@ const OUT_FILE = path.join(OUT_DIR, 'survey_schema.json');
 
 function ensureDir(p) { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); }
 
+function normalizeType(type) {
+  if (!type) return undefined;
+  const map = {
+    'checkbox-group': 'multiselect',
+    'checkbox': 'multiselect',
+    'number': 'numeric'
+  };
+  return map[type] || type;
+}
+
 function extractDataKeys(html) {
   const fields = new Map();
   const tagRe = /<[^>]*data-key="([^"]+)"[^>]*>/g;
@@ -19,7 +29,7 @@ function extractDataKeys(html) {
     const tag = m[0];
     const typeM = tag.match(/data-type="([^"]+)"/);
     const catM = tag.match(/data-category="([^"]+)"/);
-    const type = typeM ? typeM[1] : undefined;
+    const type = typeM ? normalizeType(typeM[1]) : undefined;
     const category = catM ? catM[1] : undefined;
     if (!fields.has(key)) fields.set(key, { key, type, category });
   }
@@ -83,4 +93,3 @@ function run() {
 }
 
 run();
-

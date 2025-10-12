@@ -8,6 +8,7 @@ const ROOT = path.join(__dirname, '..');
 const SCHEMA = path.join(ROOT, 'schema', 'survey_schema.json');
 const TYPED_RESP = path.join(ROOT, 'public', 'export', 'survey_typed_responses.json');
 const TYPED_SUM = path.join(ROOT, 'public', 'export', 'survey_typed_summary.json');
+const PIPELINE = path.join(ROOT, 'schema', 'pipeline.json');
 
 function fail(msg) { console.error(msg); process.exitCode = 1; }
 function exists(p) { try { return fs.existsSync(p); } catch { return false; } }
@@ -46,6 +47,20 @@ function main() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA, 'utf8'));
   const keys = validateSchema(schema);
   console.log('Schema OK with', keys.length, 'fields');
+  if (exists(PIPELINE)) {
+    const pipeline = JSON.parse(fs.readFileSync(PIPELINE, 'utf8'));
+    if (!Array.isArray(pipeline.stages) || !pipeline.stages.length) {
+      fail('pipeline.stages must be a non-empty array');
+    } else {
+      for (const stage of pipeline.stages) {
+        if (typeof stage.name !== 'string') fail('pipeline stage missing name');
+        if (!stage.outputs || !stage.outputs.length) fail('pipeline stage missing outputs');
+      }
+      console.log('Pipeline spec OK with', pipeline.stages.length, 'stages');
+    }
+  } else {
+    console.log('No pipeline.json found; skipping pipeline validation.');
+  }
   if (exists(TYPED_RESP)) {
     const resp = JSON.parse(fs.readFileSync(TYPED_RESP, 'utf8'));
     validateTyped(resp, keys);
@@ -63,4 +78,3 @@ function main() {
 }
 
 main();
-

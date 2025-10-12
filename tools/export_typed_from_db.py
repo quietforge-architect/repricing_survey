@@ -13,7 +13,7 @@ Writes:
 import json
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 
 BASE = os.path.dirname(__file__)
 SCHEMA_PATH = os.path.join(BASE, '..', 'schema', 'survey_schema.json')
@@ -89,7 +89,7 @@ def typed_exports(conn, schema):
         ts = tmap.get(rid)
         if ts:
             try:
-                out['Timestamp'] = datetime.fromtimestamp(int(ts)/1000.0).isoformat()
+                out['Timestamp'] = datetime.fromtimestamp(int(ts)/1000.0, tz=timezone.utc).isoformat()
             except Exception:
                 out['Timestamp'] = str(ts)
         for key, typ in field_types.items():
@@ -123,7 +123,7 @@ def typed_exports(conn, schema):
         for f in (fs if isinstance(fs, list) else []):
             feat[f] = feat.get(f, 0) + 1
     typed_summary = {
-        'generatedAt': datetime.utcnow().isoformat() + 'Z',
+        'generatedAt': datetime.now(timezone.utc).isoformat(),
         'totalResponses': total,
         'byExperience': by_exp,
         'avgSatisfaction': round(sat_sum/sat_cnt, 2) if sat_cnt else None,
@@ -153,4 +153,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

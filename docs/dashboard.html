@@ -44,6 +44,7 @@
       <label>&nbsp;</label>
       <button class="btn" id="btnLoad">Load JSON Manually</button>
       <input id="filePicker" type="file" accept="application/json" multiple style="display:none" />
+      <button class="btn" id="btnDownload" style="margin-top:.4rem">Download CSV</button>
     </div>
   </div>
 
@@ -85,10 +86,31 @@
       glitchBars: document.getElementById('glitchBars'),
       featBars: document.getElementById('featBars'),
       status: document.getElementById('status'),
+      btnDownload: document.getElementById('btnDownload')
     };
 
     let summary = null;
     let responses = [];
+
+    function filteredResponses() {
+      const expFilter = els.expSelect.value;
+      const modelSel = Array.from(els.modelSelect.selectedOptions).map(o => o.value);
+      const from = els.from.value ? new Date(els.from.value + 'T00:00:00') : null;
+      const to = els.to.value ? new Date(els.to.value + 'T23:59:59') : null;
+      const containsAnyModel = (rec) => {
+        if (!modelSel.length) return true;
+        const m = (rec.model || '').split(/;\s*/).filter(Boolean);
+        return m.some(x => modelSel.includes(x));
+      };
+      return responses.filter(r => {
+        const ts = r.Timestamp ? parseDateISO(r.Timestamp) : null;
+        if (from && ts && ts < from) return false;
+        if (to && ts && ts > to) return false;
+        if (expFilter && (r.experience || '') !== expFilter) return false;
+        if (!containsAnyModel(r)) return false;
+        return true;
+      });
+    }
 
     function unique(arr) { return Array.from(new Set(arr)); }
     function parseDateISO(s) { try { return new Date(s); } catch { return null; } }
@@ -115,25 +137,9 @@
     }
 
     function recomputeAndRender() {
-      const expFilter = els.expSelect.value;
-      const modelSel = Array.from(els.modelSelect.selectedOptions).map(o => o.value);
-      const from = els.from.value ? new Date(els.from.value + 'T00:00:00') : null;
-      const to = els.to.value ? new Date(els.to.value + 'T23:59:59') : null;
-
       const group = { byExperience: {}, glitchCounts: {}, features: {} };
       let satSum = 0, satCnt = 0, total = 0;
-      const containsAnyModel = (rec) => {
-        if (!modelSel.length) return true;
-        const m = (rec.model || '').split(/;\s*/).filter(Boolean);
-        return m.some(x => modelSel.includes(x));
-      };
-
-      for (const r of responses) {
-        const ts = r.Timestamp ? parseDateISO(r.Timestamp) : null;
-        if (from && ts && ts < from) continue;
-        if (to && ts && ts > to) continue;
-        if (expFilter && (r.experience || '') !== expFilter) continue;
-        if (!containsAnyModel(r)) continue;
+      for (const r of filteredResponses()) {
         total++;
         const exp = (r.experience || '').trim();
         if (exp) group.byExperience[exp] = (group.byExperience[exp] || 0) + 1;
@@ -204,8 +210,33 @@
       recomputeAndRender();
     });
 
+    function downloadCSV() {
+      const data = filteredResponses();
+      if (!data.length) { alert('No rows match current filters.'); return; }
+      const keys = Array.from(new Set(data.flatMap(obj => Object.keys(obj))));
+      const rows = [keys.join(',')];
+      for (const row of data) {
+        rows.push(keys.map(k => {
+          const val = row[k];
+          if (val == null) return '';
+          const str = Array.isArray(val) ? val.join('; ') : String(val);
+          return '"' + str.replace(/"/g,'""') + '"';
+        }).join(','));
+      }
+      const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'survey_filtered.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    els.btnDownload.addEventListener('click', downloadCSV);
+
     tryAutoLoad();
   </script>
 </body>
 </html>
-
