@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY agents/logic/sqlite-service/ ./agents/logic/sqlite-service/
-COPY db/ ./db/
+COPY db/schema_v2.sql ./db/schema_v2.sql
 COPY tools/ ./tools/
 
 RUN mkdir -p db

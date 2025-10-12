@@ -8,6 +8,8 @@ from datetime import datetime
 app = Flask(__name__)
 
 DB_PATH = os.environ.get('DB_PATH', os.path.join(os.path.dirname(__file__), '..', '..', '..', 'db', 'survey.sqlite'))
+ADMIN_TOKEN = os.environ.get('API_ADMIN_TOKEN', '').strip()
+SUBMIT_TOKEN = os.environ.get('API_SUBMIT_TOKEN', '').strip()
 
 def get_db():
     db = sqlite3.connect(DB_PATH)
@@ -42,16 +44,69 @@ def sanitize_value(v, allow_list):
     return v
 
 MULTI_KEYS = ['model', 'features']
+TOKEN_FIELDS = {'_submit_token', 'submit_token'}
+
+def _extract_bearer(header_value):
+    if not header_value:
+        return ''
+    if header_value.lower().startswith('bearer '):
+        return header_value[7:].strip()
+    return ''
+
+def ensure_admin_auth():
+    if not ADMIN_TOKEN:
+        return None
+    candidate = (
+        request.headers.get('X-Admin-Token')
+        or request.headers.get('X-Api-Key')
+        or _extract_bearer(request.headers.get('Authorization', ''))
+    )
+    if candidate == ADMIN_TOKEN:
+        return None
+    return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+
+def validate_submit_token(payload):
+    if not SUBMIT_TOKEN:
+        return True
+    candidate = (
+        request.headers.get('X-Submit-Token')
+        or request.headers.get('X-Api-Key')
+        or _extract_bearer(request.headers.get('Authorization', ''))
+    )
+    if not candidate and isinstance(payload, dict):
+        candidate = payload.get('_submit_token') or payload.get('submit_token')
+    if not candidate and getattr(request, 'form', None):
+        candidate = request.form.get('_submit_token') or request.form.get('submit_token')
+    if candidate == SUBMIT_TOKEN:
+        if isinstance(payload, dict):
+            payload.pop('_submit_token', None)
+            payload.pop('submit_token', None)
+        return True
+    return False
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    payload = request.form.to_dict()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        payload = {}
+    if not payload and request.form:
+        payload = {}
+        for key in request.form.keys():
+            values = request.form.getlist(key)
+            if len(values) > 1:
+                payload[key] = values
+            else:
+                payload[key] = request.form.get(key)
+    if not validate_submit_token(payload):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     id_ = 's_' + str(int(time.time() * 1000))
     created_at = int(time.time() * 1000)
     allow_list = [s.strip() for s in os.environ.get('COMPANY_ALLOWLIST', '').split(',') if s.strip()]
 
     sanitized_obj = {}
     for k, val in payload.items():
+        if k in TOKEN_FIELDS:
+            continue
         if re.search(r'name|email|phone|address|street|city|state|zip|postal', k, re.IGNORECASE):
             if isinstance(val, list):
                 sanitized_obj[k] = [sanitize_value(v, allow_list) for v in val]
@@ -135,6 +190,9 @@ def health():
 
 @app.route('/api/v2/responses')
 def responses():
+    auth_error = ensure_admin_auth()
+    if auth_error:
+        return auth_error
     try:
         limit = max(1, min(1000, int(request.args.get('limit', 100))))
         offset = max(0, int(request.args.get('offset', 0)))
@@ -175,6 +233,9 @@ def responses():
 
 @app.route('/api/v2/summary')
 def summary():
+    auth_error = ensure_admin_auth()
+    if auth_error:
+        return auth_error
     try:
         db = get_db()
         cursor = db.cursor()
@@ -244,4 +305,4 @@ def summary():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)

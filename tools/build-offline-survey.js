@@ -3,7 +3,7 @@ const path = require('path');
 const QRCode = require('qrcode');
 
 const rootDir = path.resolve(__dirname, '..');
-const srcDir = path.join(rootDir, 'src', 'html');
+const srcDir = path.join(rootDir, 'survey');
 const distDir = path.join(rootDir, 'dist');
 const assetsDir = path.join(distDir, 'assets');
 const iconsDir = path.join(distDir, 'icons');
@@ -126,7 +126,7 @@ async function main() {
   await ensureDir(iconsDir);
 
   const htmlSource = await fs.promises.readFile(
-    path.join(srcDir, 'survey.html'),
+    path.join(srcDir, 'index.html'),
     'utf8'
   );
   await writeFile(path.join(distDir, 'index.html'), htmlSource);

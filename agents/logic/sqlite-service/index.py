@@ -15,6 +15,9 @@ os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 conn.execute('PRAGMA foreign_keys = ON')
 
+ADMIN_TOKEN = os.getenv('API_ADMIN_TOKEN', '').strip()
+SUBMIT_TOKEN = os.getenv('API_SUBMIT_TOKEN', '').strip()
+
 # Ensure v2 schema exists
 def ensure_schema_v2():
     try:
@@ -28,6 +31,44 @@ def ensure_schema_v2():
         print(f'[sqlite-service] ensureSchemaV2 skipped: {e}')
 
 ensure_schema_v2()
+
+def _extract_bearer(header_value):
+    if not header_value:
+        return ''
+    if header_value.lower().startswith('bearer '):
+        return header_value[7:].strip()
+    return ''
+
+def _match_token(candidate, expected):
+    return bool(expected) and candidate == expected
+
+def ensure_admin_auth():
+    if not ADMIN_TOKEN:
+        return None
+    header_token = (
+        request.headers.get('X-Admin-Token')
+        or request.headers.get('X-Api-Key')
+        or _extract_bearer(request.headers.get('Authorization'))
+    )
+    if _match_token(header_token, ADMIN_TOKEN):
+        return None
+    return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+
+def validate_submit_token(payload):
+    if not SUBMIT_TOKEN:
+        return True
+    candidate = (
+        request.headers.get('X-Submit-Token')
+        or request.headers.get('X-Api-Key')
+        or _extract_bearer(request.headers.get('Authorization'))
+    )
+    if not candidate and isinstance(payload, dict):
+        candidate = payload.get('_submit_token') or payload.get('submit_token')
+    if not candidate:
+        form = getattr(request, 'form', None)
+        if form:
+            candidate = form.get('_submit_token') or form.get('submit_token')
+    return _match_token(candidate, SUBMIT_TOKEN)
 
 def sanitize_value(v, allow_list):
     if v is None:
@@ -50,7 +91,22 @@ MULTI_KEYS = ['model', 'features']
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    payload = request.get_json() or request.form.to_dict()
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        payload = {}
+    if not payload and request.form:
+        payload = {}
+        for key in request.form.keys():
+            values = request.form.getlist(key)
+            if len(values) > 1:
+                payload[key] = values
+            else:
+                payload[key] = values[0]
+    if not validate_submit_token(payload):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+    for token_key in ('_submit_token', 'submit_token'):
+        if token_key in payload:
+            payload.pop(token_key, None)
     id_ = 's_' + str(int(time.time() * 1000))
     created_at = int(time.time() * 1000)
     allow_list = [s.strip() for s in os.getenv('COMPANY_ALLOWLIST', '').split(',') if s.strip()]
@@ -103,6 +159,8 @@ def submit():
         # Questions + Values + Selections
         for key, raw_val in sanitized_obj.items():
             if not key:
+                continue
+            if key in ('_submit_token', 'submit_token'):
                 continue
             c.execute('INSERT OR IGNORE INTO questions (survey_id, key, label, type) VALUES (?, ?, ?, ?)', (survey_id, key, key, 'text'))
             c.execute('SELECT id FROM questions WHERE survey_id = ? AND key = ?', (survey_id, key))
@@ -158,6 +216,9 @@ def to_iso(ms):
 
 @app.route('/api/v2/responses', methods=['GET'])
 def v2_responses():
+    auth_error = ensure_admin_auth()
+    if auth_error:
+        return auth_error
     try:
         limit = max(1, min(1000, int(request.args.get('limit', 100))))
         offset = max(0, int(request.args.get('offset', 0)))
@@ -191,6 +252,9 @@ def v2_responses():
 
 @app.route('/api/v2/summary', methods=['GET'])
 def v2_summary():
+    auth_error = ensure_admin_auth()
+    if auth_error:
+        return auth_error
     try:
         has_v2 = table_exists('responses') and table_exists('response_values')
         if not has_v2:

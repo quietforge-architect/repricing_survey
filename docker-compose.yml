@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   survey:
     build: .
@@ -20,6 +18,8 @@ services:
       - ./db:/app/db
     environment:
       - DB_PATH=/app/db/survey.sqlite
+      - API_ADMIN_TOKEN=${API_ADMIN_TOKEN:-}
+      - API_SUBMIT_TOKEN=${API_SUBMIT_TOKEN:-}
 
 volumes:
   db_data:

@@ -14,6 +14,9 @@ const dbDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 const db = new Database(DB_PATH);
 
+const ADMIN_TOKEN = (process.env.API_ADMIN_TOKEN || '').trim();
+const SUBMIT_TOKEN = (process.env.API_SUBMIT_TOKEN || '').trim();
+
 // Ensure v2 schema exists (safe to run repeatedly)
 function ensureSchemaV2() {
   try {
@@ -55,9 +58,49 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 const MULTI_KEYS = ['model', 'features'];
+const TOKEN_FIELDS = new Set(['_submit_token', 'submit_token']);
+
+function extractBearer(headerValue = '') {
+  if (typeof headerValue !== 'string') return '';
+  if (headerValue.toLowerCase().startsWith('bearer ')) return headerValue.slice(7).trim();
+  return '';
+}
+
+function ensureAdmin(req, res) {
+  if (!ADMIN_TOKEN) return true;
+  const candidate =
+    req.get('X-Admin-Token') ||
+    req.get('X-Api-Key') ||
+    extractBearer(req.get('Authorization'));
+  if (candidate === ADMIN_TOKEN) return true;
+  res.status(401).json({ ok: false, error: 'Unauthorized' });
+  return false;
+}
+
+function validateSubmitToken(req, payload) {
+  if (!SUBMIT_TOKEN) return true;
+  let candidate =
+    req.get('X-Submit-Token') ||
+    req.get('X-Api-Key') ||
+    extractBearer(req.get('Authorization'));
+  if (!candidate && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    candidate = payload._submit_token || payload.submit_token;
+  }
+  if (candidate === SUBMIT_TOKEN) {
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      delete payload._submit_token;
+      delete payload.submit_token;
+    }
+    return true;
+  }
+  return false;
+}
 
 app.post('/submit', (req, res) => {
-  const payload = req.body || {};
+  const payload = (req.body && typeof req.body === 'object') ? { ...req.body } : {};
+  if (!validateSubmitToken(req, payload)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
   const id = 's_' + Date.now();
   const created_at = Date.now();
   const allowList = (process.env.COMPANY_ALLOWLIST || '').split(',').map(s=>s.trim()).filter(Boolean);
@@ -65,6 +108,7 @@ app.post('/submit', (req, res) => {
   // Sanitize payload (PII redaction for known keys), preserve arrays
   const sanitizedObj = {};
   for (const k of Object.keys(payload)) {
+    if (TOKEN_FIELDS.has(k)) continue;
     const val = payload[k];
     if (/name|email|phone|address|street|city|state|zip|postal/i.test(k)) {
       if (Array.isArray(val)) sanitizedObj[k] = val.map(v => sanitizeValue(v, allowList));
@@ -156,6 +200,7 @@ function toISO(ms) { try { return new Date(ms).toISOString(); } catch (_) { retu
 
 // v2: list responses
 app.get('/api/v2/responses', (req, res) => {
+  if (!ensureAdmin(req, res)) return;
   try {
     const limit = Math.max(1, Math.min(1000, parseInt(req.query.limit || '100', 10)));
     const offset = Math.max(0, parseInt(req.query.offset || '0', 10));
@@ -186,6 +231,7 @@ app.get('/api/v2/responses', (req, res) => {
 
 // v2: summary aggregates
 app.get('/api/v2/summary', (req, res) => {
+  if (!ensureAdmin(req, res)) return;
   try {
     const hasV2 = tableExists('responses') && tableExists('response_values');
     if (!hasV2) return res.status(503).json({ ok:false, error:'v2 schema missing. Run init-db.' });
@@ -224,4 +270,3 @@ app.get('/api/v2/summary', (req, res) => {
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log('sqlite-service listening on', port));
-
