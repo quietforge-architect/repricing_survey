@@ -8,9 +8,19 @@ const distDir = path.join(rootDir, 'dist');
 const assetsDir = path.join(distDir, 'assets');
 const iconsDir = path.join(distDir, 'icons');
 
-const SURVEY_URL =
-  process.env.SURVEY_URL ||
-  'https://example.com/survey';
+const DEFAULT_SURVEY_URL = 'https://quietforgedev.github.io/amazon-repricing-survey/';
+const SURVEY_URL = process.env.SURVEY_URL || DEFAULT_SURVEY_URL;
+
+if (!process.env.SURVEY_URL) {
+  console.warn(`[build-offline-survey] SURVEY_URL not set. Using default: ${DEFAULT_SURVEY_URL}`);
+}
+
+if (/localhost|127\.0\.0\.1/i.test(SURVEY_URL)) {
+  throw new Error(
+    `SURVEY_URL points to a localhost address (${SURVEY_URL}). ` +
+    'Set SURVEY_URL to a publicly reachable survey URL before building.'
+  );
+}
 
 async function ensureDir(dirPath) {
   await fs.promises.mkdir(dirPath, { recursive: true });

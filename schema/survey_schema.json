@@ -1,136 +1,90 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2025-10-12T17:18:07.284Z",
+  "generatedAt": "2025-10-12T19:09:53.155Z",
   "fields": [
     {
-      "key": "ai_improvement",
-      "type": "string",
-      "category": "AI_Trust"
-    },
-    {
-      "key": "ai_used",
-      "type": "string",
-      "category": "AI_Trust"
-    },
-    {
-      "key": "anon_data",
-      "type": "string",
+      "key": "ai_trust_temperature",
       "category": "Privacy"
+    },
+    {
+      "key": "community_interest",
+      "category": "Participation"
     },
     {
       "key": "contact",
-      "type": "string",
       "category": "Participation"
     },
     {
-      "key": "experience",
-      "type": "ordinal",
-      "category": "SellerProfile"
+      "key": "experiment_cadence",
+      "category": "RiskInsights"
     },
     {
-      "key": "feature_request",
-      "type": "text_long",
-      "category": "Wishlist"
+      "key": "inventory_anxiety",
+      "category": "Workflow"
     },
     {
-      "key": "features",
+      "key": "learning_sources",
       "type": "multiselect",
-      "category": "RepricingExperience"
+      "category": "RiskInsights"
     },
     {
-      "key": "glitch",
-      "type": "string",
-      "category": "RepricingExperience"
+      "key": "listing_rhythm",
+      "category": "Workflow"
     },
     {
-      "key": "glitch_details",
-      "type": "text_long",
-      "category": "RepricingExperience"
+      "key": "memorable_glitch",
+      "category": "RiskInsights"
     },
     {
-      "key": "keepa",
-      "type": "string",
+      "key": "non_book_inventory",
       "category": "SellerProfile"
     },
     {
-      "key": "local_tool",
-      "type": "string",
-      "category": "Wishlist"
+      "key": "price_check_frequency",
+      "category": "Workflow"
     },
     {
-      "key": "missing_data",
-      "type": "text_long",
-      "category": "AI_Trust"
-    },
-    {
-      "key": "model",
-      "type": "multiselect",
-      "category": "SellerProfile"
-    },
-    {
-      "key": "model_options",
-      "type": "multiselect",
-      "category": "SellerProfile"
-    },
-    {
-      "key": "model_other",
-      "type": "text_long",
-      "category": "SellerProfile"
-    },
-    {
-      "key": "monitoring",
-      "type": "text_long",
-      "category": "Participation"
-    },
-    {
-      "key": "painpoint",
-      "type": "text_long",
-      "category": "RepricingExperience"
-    },
-    {
-      "key": "privacy",
-      "type": "ordinal",
+      "key": "privacy_rating",
       "category": "Privacy"
     },
     {
-      "key": "repricer",
-      "type": "string",
+      "key": "repricing_stack",
+      "category": "Workflow"
+    },
+    {
+      "key": "risk_posture",
+      "category": "RiskInsights"
+    },
+    {
+      "key": "safety_nets",
+      "type": "multiselect",
+      "category": "RiskInsights"
+    },
+    {
+      "key": "selling_commitment",
       "category": "SellerProfile"
     },
     {
-      "key": "satisfaction",
-      "type": "ordinal",
-      "category": "RepricingExperience"
+      "key": "signal_menu",
+      "type": "multiselect",
+      "category": "Workflow"
     },
     {
-      "key": "sku_count",
-      "type": "numeric",
+      "key": "sourcing_style",
+      "type": "multiselect",
       "category": "SellerProfile"
     },
     {
-      "key": "style",
-      "type": "string",
-      "category": "RepricingExperience"
+      "key": "weekly_hours",
+      "category": "SellerProfile"
     },
     {
-      "key": "trust_ai",
-      "type": "string",
-      "category": "AI_Trust"
-    },
-    {
-      "key": "trust_ai_reason",
-      "type": "text_long",
-      "category": "AI_Trust"
-    },
-    {
-      "key": "trust_features",
-      "type": "text_long",
+      "key": "wishlist_feature",
       "category": "Wishlist"
     },
     {
-      "key": "valuable_features",
-      "type": "text_long",
-      "category": "RepricingExperience"
+      "key": "years_selling",
+      "category": "SellerProfile"
     }
   ]
 }

@@ -3,6 +3,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python agents/logic/sqlite-service/index.py"
+    "startCommand": "gunicorn --bind 0.0.0.0:$PORT agents.logic.sqlite_service.index:app"
   }
 }
