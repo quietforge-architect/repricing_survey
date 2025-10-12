@@ -23,14 +23,16 @@
   <h1>Survey Dashboard</h1>
   <div class="row">
     <div class="field">
-      <label for="experience">Experience</label>
-      <select id="experience">
+      <label for="years">Years Selling</label>
+      <select id="years">
         <option value="">All</option>
       </select>
     </div>
     <div class="field">
-      <label for="model">Model</label>
-      <select id="model" multiple size="4"></select>
+      <label for="commitment">Selling Commitment</label>
+      <select id="commitment">
+        <option value="">All</option>
+      </select>
     </div>
     <div class="field">
       <label for="from">From</label>
@@ -52,20 +54,38 @@
     <div class="card">
       <h3>Totals</h3>
       <div class="kpi"><span>Total Responses</span><b id="kpiTotal">—</b></div>
-      <div class="kpi"><span>Avg Satisfaction</span><b id="kpiSat">—</b></div>
+      <div class="kpi"><span>Avg Weekly Hours</span><b id="kpiWeekly">—</b></div>
+      <div class="kpi"><span>Avg Privacy Rating</span><b id="kpiPrivacy">—</b></div>
+      <div class="kpi"><span>Avg Inventory Anxiety</span><b id="kpiAnxiety">—</b></div>
       <div class="muted" id="kpiGenerated">—</div>
     </div>
     <div class="card">
-      <h3>Experience</h3>
-      <div id="expBars"></div>
+      <h3>Years Selling</h3>
+      <div id="yearsBars"></div>
     </div>
     <div class="card">
-      <h3>Glitches</h3>
-      <div id="glitchBars"></div>
+      <h3>Selling Commitment</h3>
+      <div id="commitmentBars"></div>
     </div>
     <div class="card">
-      <h3>Top Features</h3>
-      <div id="featBars"></div>
+      <h3>Risk Posture</h3>
+      <div id="riskBars"></div>
+    </div>
+    <div class="card">
+      <h3>Signal Menu (Top)</h3>
+      <div id="signalBars"></div>
+    </div>
+    <div class="card">
+      <h3>Sourcing Style (Top)</h3>
+      <div id="sourcingBars"></div>
+    </div>
+    <div class="card">
+      <h3>Safety Nets (Top)</h3>
+      <div id="safetyBars"></div>
+    </div>
+    <div class="card">
+      <h3>Learning Sources (Top)</h3>
+      <div id="learningBars"></div>
     </div>
   </div>
 
@@ -73,62 +93,79 @@
 
   <script>
     const els = {
-      expSelect: document.getElementById('experience'),
-      modelSelect: document.getElementById('model'),
+      yearsSelect: document.getElementById('years'),
+      commitmentSelect: document.getElementById('commitment'),
       from: document.getElementById('from'),
       to: document.getElementById('to'),
       btnLoad: document.getElementById('btnLoad'),
       filePicker: document.getElementById('filePicker'),
+      btnDownload: document.getElementById('btnDownload'),
       kpiTotal: document.getElementById('kpiTotal'),
-      kpiSat: document.getElementById('kpiSat'),
+      kpiWeekly: document.getElementById('kpiWeekly'),
+      kpiPrivacy: document.getElementById('kpiPrivacy'),
+      kpiAnxiety: document.getElementById('kpiAnxiety'),
       kpiGenerated: document.getElementById('kpiGenerated'),
-      expBars: document.getElementById('expBars'),
-      glitchBars: document.getElementById('glitchBars'),
-      featBars: document.getElementById('featBars'),
+      yearsBars: document.getElementById('yearsBars'),
+      commitmentBars: document.getElementById('commitmentBars'),
+      riskBars: document.getElementById('riskBars'),
+      signalBars: document.getElementById('signalBars'),
+      sourcingBars: document.getElementById('sourcingBars'),
+      safetyBars: document.getElementById('safetyBars'),
+      learningBars: document.getElementById('learningBars'),
       status: document.getElementById('status'),
-      btnDownload: document.getElementById('btnDownload')
     };
 
+    const MULTI_KEYS = ['signal_menu', 'sourcing_style', 'safety_nets', 'learning_sources'];
     let summary = null;
     let responses = [];
 
+    function parseISODate(s) {
+      if (!s) return null;
+      const date = new Date(s);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function parseMulti(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      return String(raw)
+        .split(/;\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
     function filteredResponses() {
-      const expFilter = els.expSelect.value;
-      const modelSel = Array.from(els.modelSelect.selectedOptions).map(o => o.value);
-      const from = els.from.value ? new Date(els.from.value + 'T00:00:00') : null;
-      const to = els.to.value ? new Date(els.to.value + 'T23:59:59') : null;
-      const containsAnyModel = (rec) => {
-        if (!modelSel.length) return true;
-        const m = (rec.model || '').split(/;\s*/).filter(Boolean);
-        return m.some(x => modelSel.includes(x));
-      };
-      return responses.filter(r => {
-        const ts = r.Timestamp ? parseDateISO(r.Timestamp) : null;
-        if (from && ts && ts < from) return false;
-        if (to && ts && ts > to) return false;
-        if (expFilter && (r.experience || '') !== expFilter) return false;
-        if (!containsAnyModel(r)) return false;
+      const yearFilter = els.yearsSelect.value;
+      const commitmentFilter = els.commitmentSelect.value;
+      const fromDate = els.from.value ? new Date(`${els.from.value}T00:00:00`) : null;
+      const toDate = els.to.value ? new Date(`${els.to.value}T23:59:59`) : null;
+      return responses.filter((rec) => {
+        const ts = parseISODate(rec.Timestamp);
+        if (fromDate && ts && ts < fromDate) return false;
+        if (toDate && ts && ts > toDate) return false;
+        if (yearFilter && (rec.years_selling || '') !== yearFilter) return false;
+        if (commitmentFilter && (rec.selling_commitment || '') !== commitmentFilter) return false;
         return true;
       });
     }
 
-    function unique(arr) { return Array.from(new Set(arr)); }
-    function parseDateISO(s) { try { return new Date(s); } catch { return null; } }
-
     function renderBars(container, map) {
       container.innerHTML = '';
-      const entries = Object.entries(map);
-      if (!entries.length) { container.textContent = '—'; return; }
-      const max = Math.max(1, ...entries.map(([,v]) => v));
-      for (const [k,v] of entries) {
+      const entries = Object.entries(map || {});
+      if (!entries.length) {
+        container.textContent = '—';
+        return;
+      }
+      const max = Math.max(1, ...entries.map(([, value]) => value));
+      for (const [label, value] of entries.sort((a, b) => b[1] - a[1])) {
         const wrap = document.createElement('div');
         const row = document.createElement('div');
-        row.className = 'kpi';
-        row.innerHTML = `<span>${k}</span><b>${v}</b>`;
+        row.className = 'row';
+        row.innerHTML = `<span>${label}</span><b>${value}</b>`;
         const bar = document.createElement('div');
         bar.className = 'bar';
         const span = document.createElement('span');
-        span.style.width = ((v/max)*100).toFixed(1) + '%';
+        span.style.width = `${((value / max) * 100).toFixed(1)}%`;
         bar.appendChild(span);
         wrap.appendChild(row);
         wrap.appendChild(bar);
@@ -136,101 +173,160 @@
       }
     }
 
+    function renderTop(container, counter) {
+      const map = Object.fromEntries(
+        [...counter.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+      );
+      renderBars(container, map);
+    }
+
     function recomputeAndRender() {
-      const group = { byExperience: {}, glitchCounts: {}, features: {} };
-      let satSum = 0, satCnt = 0, total = 0;
-      for (const r of filteredResponses()) {
-        total++;
-        const exp = (r.experience || '').trim();
-        if (exp) group.byExperience[exp] = (group.byExperience[exp] || 0) + 1;
-        const g = (r.glitch || '').trim(); if (g) group.glitchCounts[g] = (group.glitchCounts[g] || 0) + 1;
-        const s = Number(r.satisfaction); if (Number.isFinite(s)) { satSum += s; satCnt++; }
-        const feats = (r.features || '').split(/;\s*/).filter(Boolean);
-        for (const f of feats) group.features[f] = (group.features[f] || 0) + 1;
+      const data = filteredResponses();
+      const totals = {
+        count: data.length,
+        weekly: { sum: 0, n: 0 },
+        privacy: { sum: 0, n: 0 },
+        anxiety: { sum: 0, n: 0 },
+      };
+      const counts = {
+        years_selling: {},
+        selling_commitment: {},
+        risk_posture: {},
+      };
+      const multiCounters = new Map(MULTI_KEYS.map((key) => [key, new Map()]));
+
+      for (const rec of data) {
+        const year = (rec.years_selling || '').trim();
+        if (year) counts.years_selling[year] = (counts.years_selling[year] || 0) + 1;
+
+        const commitment = (rec.selling_commitment || '').trim();
+        if (commitment) counts.selling_commitment[commitment] = (counts.selling_commitment[commitment] || 0) + 1;
+
+        const risk = (rec.risk_posture || '').trim();
+        if (risk) counts.risk_posture[risk] = (counts.risk_posture[risk] || 0) + 1;
+
+        const weekly = Number(rec.weekly_hours);
+        if (Number.isFinite(weekly)) { totals.weekly.sum += weekly; totals.weekly.n += 1; }
+
+        const privacy = Number(rec.privacy_rating);
+        if (Number.isFinite(privacy)) { totals.privacy.sum += privacy; totals.privacy.n += 1; }
+
+        const anxiety = Number(rec.inventory_anxiety);
+        if (Number.isFinite(anxiety)) { totals.anxiety.sum += anxiety; totals.anxiety.n += 1; }
+
+        for (const key of MULTI_KEYS) {
+          const counter = multiCounters.get(key);
+          for (const item of parseMulti(rec[key])) {
+            counter.set(item, (counter.get(item) || 0) + 1);
+          }
+        }
       }
 
-      els.kpiTotal.textContent = String(total);
-      els.kpiSat.textContent = satCnt ? (satSum / satCnt).toFixed(2) : '—';
+      els.kpiTotal.textContent = String(totals.count);
+      els.kpiWeekly.textContent = totals.weekly.n ? (totals.weekly.sum / totals.weekly.n).toFixed(2) : '—';
+      els.kpiPrivacy.textContent = totals.privacy.n ? (totals.privacy.sum / totals.privacy.n).toFixed(2) : '—';
+      els.kpiAnxiety.textContent = totals.anxiety.n ? (totals.anxiety.sum / totals.anxiety.n).toFixed(2) : '—';
       els.kpiGenerated.textContent = summary?.generatedAt || '';
-      renderBars(els.expBars, group.byExperience);
-      renderBars(els.glitchBars, group.glitchCounts);
-      renderBars(els.featBars, Object.fromEntries(Object.entries(group.features).sort((a,b)=>b[1]-a[1]).slice(0,15)));
+
+      renderBars(els.yearsBars, counts.years_selling);
+      renderBars(els.commitmentBars, counts.selling_commitment);
+      renderBars(els.riskBars, counts.risk_posture);
+      renderTop(els.signalBars, multiCounters.get('signal_menu'));
+      renderTop(els.sourcingBars, multiCounters.get('sourcing_style'));
+      renderTop(els.safetyBars, multiCounters.get('safety_nets'));
+      renderTop(els.learningBars, multiCounters.get('learning_sources'));
+    }
+
+    function uniqueSorted(values) {
+      return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
     }
 
     function populateFilters() {
-      // experiences
-      const exps = unique(responses.map(r => (r.experience || '').trim()).filter(Boolean)).sort();
-      els.expSelect.innerHTML = '<option value="">All</option>' + exps.map(x => `<option>${x}</option>`).join('');
-      // models
-      const models = new Set();
-      for (const r of responses) (r.model || '').split(/;\s*/).filter(Boolean).forEach(m => models.add(m));
-      els.modelSelect.innerHTML = Array.from(models).sort().map(m => `<option>${m}</option>`).join('');
-      // dates
-      const dates = responses.map(r => r.Timestamp).filter(Boolean).map(parseDateISO).filter(d => !isNaN(d));
+      const years = uniqueSorted(responses.map((r) => (r.years_selling || '').trim()));
+      els.yearsSelect.innerHTML = '<option value="">All</option>' + years.map((y) => `<option>${y}</option>`).join('');
+
+      const commitments = uniqueSorted(responses.map((r) => (r.selling_commitment || '').trim()));
+      els.commitmentSelect.innerHTML = '<option value="">All</option>' + commitments.map((c) => `<option>${c}</option>`).join('');
+
+      const dates = responses
+        .map((r) => parseISODate(r.Timestamp))
+        .filter((d) => d);
       if (dates.length) {
-        const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
-        els.from.value = min.toISOString().slice(0,10);
-        els.to.value = max.toISOString().slice(0,10);
+        const min = new Date(Math.min(...dates));
+        const max = new Date(Math.max(...dates));
+        els.from.value = min.toISOString().slice(0, 10);
+        els.to.value = max.toISOString().slice(0, 10);
       }
     }
 
     async function tryAutoLoad() {
       try {
         const [s, r] = await Promise.all([
-          fetch('../public/export/survey_summary.json', { cache:'no-store' }),
-          fetch('../public/export/survey_responses.json', { cache:'no-store' })
+          fetch('../public/export/survey_summary.json', { cache: 'no-store' }),
+          fetch('../public/export/survey_responses.json', { cache: 'no-store' }),
         ]);
         if (!s.ok || !r.ok) throw new Error('Fetch failed');
         summary = await s.json();
-        const rj = await r.json();
-        responses = Array.isArray(rj.items) ? rj.items : [];
-        els.status.textContent = 'Loaded exports from public/export/';
+        const respJson = await r.json();
+        responses = Array.isArray(respJson.items) ? respJson.items : [];
+        els.status.textContent = 'Loaded exports from public/export/.';
         populateFilters();
         recomputeAndRender();
-      } catch (e) {
+      } catch (err) {
         els.status.textContent = 'Auto-load failed. Use "Load JSON Manually" to select summary and responses files.';
       }
     }
 
-    els.expSelect.addEventListener('change', recomputeAndRender);
-    els.modelSelect.addEventListener('change', recomputeAndRender);
+    els.yearsSelect.addEventListener('change', recomputeAndRender);
+    els.commitmentSelect.addEventListener('change', recomputeAndRender);
     els.from.addEventListener('change', recomputeAndRender);
     els.to.addEventListener('change', recomputeAndRender);
     els.btnLoad.addEventListener('click', () => els.filePicker.click());
     els.filePicker.addEventListener('change', async (ev) => {
       const files = Array.from(ev.target.files || []);
-      const sum = files.find(f=>/summary\.json$/i.test(f.name));
-      const resp = files.find(f=>/responses\.json$/i.test(f.name)) || files[0];
-      if (!sum || !resp) return;
-      summary = JSON.parse(await sum.text());
-      const rj = JSON.parse(await resp.text());
-      responses = Array.isArray(rj.items) ? rj.items : [];
-      els.status.textContent = 'Loaded selected files.';
-      populateFilters();
-      recomputeAndRender();
+      const summaryFile = files.find((f) => /summary\.json$/i.test(f.name));
+      const responsesFile = files.find((f) => /responses\.json$/i.test(f.name)) || files[0];
+      if (!summaryFile || !responsesFile) return;
+      try {
+        summary = JSON.parse(await summaryFile.text());
+        const respJson = JSON.parse(await responsesFile.text());
+        responses = Array.isArray(respJson.items) ? respJson.items : [];
+        els.status.textContent = 'Loaded selected files.';
+        populateFilters();
+        recomputeAndRender();
+      } catch (err) {
+        console.error('Failed loading selected files:', err);
+        els.status.textContent = 'Could not parse selected JSON files.';
+      }
     });
 
     function downloadCSV() {
       const data = filteredResponses();
       if (!data.length) { alert('No rows match current filters.'); return; }
-      const keys = Array.from(new Set(data.flatMap(obj => Object.keys(obj))));
+      const keys = Array.from(new Set(data.flatMap((obj) => Object.keys(obj))));
       const rows = [keys.join(',')];
       for (const row of data) {
-        rows.push(keys.map(k => {
-          const val = row[k];
-          if (val == null) return '';
-          const str = Array.isArray(val) ? val.join('; ') : String(val);
-          return '"' + str.replace(/"/g,'""') + '"';
-        }).join(','));
+        rows.push(
+          keys
+            .map((key) => {
+              const val = row[key];
+              if (val == null) return '';
+              const str = Array.isArray(val) ? val.join('; ') : String(val);
+              return `"${str.replace(/"/g, '""')}"`
+            })
+            .join(',')
+        );
       }
-      const blob = new Blob([rows.join('\n')], { type:'text/csv;charset=utf-8' });
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'survey_filtered.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'survey_filtered.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }
 

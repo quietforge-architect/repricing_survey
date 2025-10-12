@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -12,10 +12,11 @@
     <meta name="form_name" content="Amazon_Repricing_Feedback_Survey" />
     <meta name="author" content="Quiet Forge Development Studio" />
     <meta name="data_categories" content="SellerProfile,Workflow,RiskInsights,Wishlist,Privacy,Participation" />
-    <meta name="theme-color" content="#1d4ed8" />
+    <!-- <meta name="theme-color" content="#1d4ed8" /> -->
+    <!-- Removed invalid msapplication-navbutton-color meta tag -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="msapplication-TileColor" content="#1d4ed8" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180" />
-    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="stylesheet" href="./style.css" />
     <script type="application/ld+json">
       {
@@ -34,7 +35,7 @@
     </script>
   </head>
   <body>
-    <form id="surveyForm" data-action="http://localhost:3001/submit" novalidate>
+    <form id="surveyForm" data-action="https://repricing-survey.up.railway.app/submit" novalidate>
       <h1>Amazon Repricing Feedback Survey</h1>
       <p class="intro">
         Hey fellow seller, thanks for lending your brain for a few minutes. We are studying how repricing actually feels
@@ -50,8 +51,8 @@
           <select name="years_selling" required>
             <option value="" disabled selected>Pick the era that fits</option>
             <option value="Still cracking the first spine (0-12 months)">Still cracking the first spine (0-12 months)</option>
-            <option value="Plot twist prologue (1-2 years)">Plot twist prologue (1-2 years)</option>
-            <option value="Trilogy territory (3-5 years)">Trilogy territory (3-5 years)</option>
+            <option value="" disabled selected hidden>Pick the era that fits</option>
+            <option value="Still cracking the first spine (0-12 months)">Still cracking the first spine (0-12 months)</option>
             <option value="Encyclopedia energy (5+ years)">Encyclopedia energy (5+ years)</option>
           </select>
         </label>
@@ -61,8 +62,8 @@
           <select name="selling_commitment" required>
             <option value="" disabled selected>Choose the vibe</option>
             <option value="Part-time for fun (or funding more books)">Part-time for fun (or funding more books)</option>
-            <option value="Full-time and living on ISBNs">Full-time and living on ISBNs</option>
-            <option value="Seasonal snowstorm hustle">Seasonal snowstorm hustle</option>
+            <option value="" disabled selected hidden>Choose the vibe</option>
+            <option value="Part-time for fun (or funding more books)">Part-time for fun (or funding more books)</option>
             <option value="Other mix of chaos">Other mix of chaos</option>
           </select>
         </label>
@@ -106,7 +107,7 @@
 
         <label data-category="Workflow" data-key="listing_rhythm">
           How do you batch your listing and repricing sessions?
-          <select name="listing_rhythm">
+          <select name="listing_rhythm" required>
             <option value="" disabled selected>Pick the closest cadence</option>
             <option value="Daily micro-sprints with a mug of something warm">Daily micro-sprints with a mug of something warm</option>
             <option value="Big weekly batch while the world sleeps">Big weekly batch while the world sleeps</option>
@@ -274,22 +275,21 @@
       <div class="navigation">
         <button type="button" id="prev" class="nav-button" disabled>Previous</button>
         <span id="progress" class="progress" aria-live="polite">1 / 4</span>
-        <button type="button" id="next" class="nav-button primary">Next</button>
+  <button type="button" id="next" class="nav-button primary" aria-label="Save progress and continue">Save & Continue</button>
         <button type="submit" id="submitBtn" class="primary" hidden>Send My Feedback</button>
       </div>
 
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </form>
 
-    <script src="./survey.js" defer></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js').catch(() => {
-            /* optional offline support */
-          });
-        });
-      }
-    </script>
   </body>
+  <script src="./survey.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js').catch((error) => {
+        console.error('Service worker registration failed:', error);
+        /* optional offline support */
+      });
+    }
+  </script>
 </html>

@@ -35,11 +35,17 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       return fetch(request)
         .then((response) => {
+          if (!response || response.status !== 200 || response.type === 'opaque') {
+            return response;
+          }
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => cached);
+        .catch(() => {
+          if (cached) return cached;
+          return new Response('Offline', { status: 503, statusText: 'Offline' });
+        });
     })
   );
 });

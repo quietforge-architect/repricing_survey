@@ -5,7 +5,6 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const querystring = require('querystring');
 
 const PORT = parseInt((process.argv.find(a => a.startsWith('--port=')) || '').split('=')[1] || process.env.PORT || '3000', 10);
 const DATA_DIR = path.join(__dirname, 'data');
@@ -40,16 +39,30 @@ function csvEscape(s) {
 
 function nowIso() { return new Date().toISOString(); }
 
+function parseFormBody(raw) {
+  const params = new URLSearchParams(raw);
+  const out = {};
+  for (const [key, value] of params.entries()) {
+    if (Object.prototype.hasOwnProperty.call(out, key)) {
+      if (Array.isArray(out[key])) out[key].push(value);
+      else out[key] = [out[key], value];
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 function normalizeBody(contentType, raw) {
   if (!raw) return {};
   if ((contentType || '').includes('application/json')) {
     try { return JSON.parse(raw); } catch { return {}; }
   }
   if ((contentType || '').includes('application/x-www-form-urlencoded')) {
-    return querystring.parse(raw);
+    return parseFormBody(raw);
   }
   // Default: try URL-encoded
-  try { return querystring.parse(raw); } catch { return {}; }
+  try { return parseFormBody(raw); } catch { return {}; }
 }
 
 function ensureHeaders(existing, incomingKeys) {
@@ -78,7 +91,14 @@ const server = http.createServer((req, res) => {
       // Build row map in header order
       const rowMap = {};
       for (const h of headers) {
-        rowMap[h] = h === 'Timestamp' ? nowIso() : (map[h] != null ? String(map[h]) : '');
+        if (h === 'Timestamp') {
+          rowMap[h] = nowIso();
+          continue;
+        }
+        const val = map[h];
+        if (Array.isArray(val)) rowMap[h] = val.join('; ');
+        else if (val == null) rowMap[h] = '';
+        else rowMap[h] = String(val);
       }
       appendCsvRow(headers, rowMap);
       fs.appendFileSync(JSONL_PATH, JSON.stringify({ ts: nowIso(), data: map }) + '\n', 'utf8');
@@ -99,4 +119,3 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`[local-collector] listening on http://localhost:${PORT}`);
 });
-

@@ -11,6 +11,18 @@ const OUT_RESPONSES = path.join(OUT_DIR, 'survey_responses.json');
 
 const EXCLUDE_FIELDS = new Set(['contact', 'email', 'phone']);
 const MULTI_DELIM = /;\s*/; // matches "; "
+const COUNT_KEYS = [
+  'years_selling',
+  'selling_commitment',
+  'risk_posture',
+  'price_check_frequency',
+  'experiment_cadence',
+  'ai_trust_temperature',
+  'community_interest',
+];
+const NUMERIC_KEYS = ['weekly_hours', 'inventory_anxiety', 'privacy_rating'];
+const MULTI_KEYS = ['sourcing_style', 'signal_menu', 'safety_nets', 'learning_sources'];
+const TEXT_KEYS = ['repricing_stack', 'memorable_glitch', 'wishlist_feature'];
 
 function ensureDir(p) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
@@ -72,46 +84,73 @@ function toNumber(x) {
 }
 
 function aggregate(objs) {
-  const out = {
+  const summary = {
     generatedAt: new Date().toISOString(),
     totalResponses: objs.length,
-    byExperience: {},
-    avgSatisfaction: null,
-    glitchCounts: {},
-    topFeatures: [],
-    freeTextCounts: {}
+    counts: Object.fromEntries(COUNT_KEYS.map((k) => [k, {}])),
+    averages: Object.fromEntries(NUMERIC_KEYS.map((k) => [k, { mean: null, count: 0 }])),
+    multiSelectTop: Object.fromEntries(MULTI_KEYS.map((k) => [k, []])),
+    textResponseCounts: Object.fromEntries(TEXT_KEYS.map((k) => [k, 0])),
   };
 
-  let satSum = 0, satCount = 0;
-  const features = new Map();
-  const freeTextFields = ['painpoint', 'valuable_features', 'trust_ai_reason', 'feature_request', 'monitoring'];
+  const numericStats = new Map(NUMERIC_KEYS.map((k) => [k, { sum: 0, count: 0 }]));
+  const multiCounters = new Map(MULTI_KEYS.map((k) => [k, new Map()]));
 
   for (const o of objs) {
-    const exp = (o.experience || '').trim();
-    if (exp) out.byExperience[exp] = (out.byExperience[exp] || 0) + 1;
-
-    const sat = toNumber(o.satisfaction);
-    if (sat != null) { satSum += sat; satCount++; }
-
-    const glitch = (o.glitch || o.glitch_details ? (o.glitch || 'Unknown') : '').trim();
-    if (glitch) out.glitchCounts[glitch] = (out.glitchCounts[glitch] || 0) + 1;
-
-    if (o.features) {
-      String(o.features).split(MULTI_DELIM).map(s => s.trim()).filter(Boolean).forEach(f => {
-        features.set(f, (features.get(f) || 0) + 1);
-      });
+    for (const key of COUNT_KEYS) {
+      const raw = (o[key] || '').trim();
+      if (!raw) continue;
+      const bucket = summary.counts[key];
+      bucket[raw] = (bucket[raw] || 0) + 1;
     }
 
-    for (const f of freeTextFields) {
-      if (o[f] && String(o[f]).trim()) {
-        out.freeTextCounts[f] = (out.freeTextCounts[f] || 0) + 1;
+    for (const key of NUMERIC_KEYS) {
+      const num = toNumber(o[key]);
+      if (num == null) continue;
+      const stat = numericStats.get(key);
+      stat.sum += num;
+      stat.count += 1;
+    }
+
+    for (const key of TEXT_KEYS) {
+      const raw = o[key];
+      if (raw && String(raw).trim()) {
+        summary.textResponseCounts[key] += 1;
+      }
+    }
+
+    for (const key of MULTI_KEYS) {
+      const raw = o[key];
+      if (!raw) continue;
+      const values = Array.isArray(raw)
+        ? raw
+        : String(raw)
+            .split(MULTI_DELIM)
+            .map((s) => s.trim())
+            .filter(Boolean);
+      if (!values.length) continue;
+      const counter = multiCounters.get(key);
+      for (const val of values) {
+        counter.set(val, (counter.get(val) || 0) + 1);
       }
     }
   }
 
-  if (satCount) out.avgSatisfaction = +(satSum / satCount).toFixed(2);
-  out.topFeatures = Array.from(features.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 15).map(([name,count])=>({name,count}));
-  return out;
+  for (const [key, stat] of numericStats.entries()) {
+    summary.averages[key] = stat.count
+      ? { mean: +(stat.sum / stat.count).toFixed(2), count: stat.count }
+      : { mean: null, count: 0 };
+  }
+
+  for (const [key, counter] of multiCounters.entries()) {
+    const sorted = Array.from(counter.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([name, count]) => ({ name, count }));
+    summary.multiSelectTop[key] = sorted;
+  }
+
+  return summary;
 }
 
 function main() {
@@ -131,4 +170,3 @@ function main() {
 }
 
 if (require.main === module) main();
-

@@ -11,10 +11,14 @@ COPY db/schema_v2.sql ./db/schema_v2.sql
 COPY tools/ ./tools/
 
 RUN mkdir -p db
-
 EXPOSE 3001
 
+# allow the runtime to override PORT; default to 3001 for local testing
 ENV PORT=3001
-# Use gunicorn to run the Flask app in the container. Bind to 0.0.0.0:3001.
-# This is more predictable in production environments than the dev server.
-CMD ["gunicorn", "--bind", "0.0.0.0:3001", "agents.logic.sqlite_service.index:app", "--workers", "2", "--threads", "2"]
+
+# copy a small entrypoint script that will ensure the DB directory exists,
+# optionally initialize schema if provided, and then exec gunicorn binding to $PORT
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+CMD ["sh", "-c", "/usr/local/bin/docker-entrypoint.sh"]

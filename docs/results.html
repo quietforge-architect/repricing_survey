@@ -6,7 +6,7 @@
   <title>Survey Results Dashboard (Safe)</title>
   <style>
     body { font-family: system-ui, sans-serif; margin: 1.5rem; color: #222; }
-    header { display:flex; align-items:center; gap:1rem; }
+    header { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
     h1 { margin: 0.2rem 0; }
     .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top:1rem; }
     .card { border:1px solid #ddd; border-radius:.75rem; padding:1rem; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.05); }
@@ -17,6 +17,8 @@
     footer { margin-top: 2rem; color:#666; font-size:.9rem; }
     input[type=file] { display:none; }
     .btn { padding:.5rem .8rem; border:1px solid #ccc; border-radius:.5rem; background:#fafafa; cursor:pointer; }
+    ul { margin:0; padding-left:1.1rem; }
+    ul li { margin:0.25rem 0; }
   </style>
 </head>
 <body>
@@ -25,26 +27,52 @@
     <button class="btn" id="btnLoad">Load JSON Manually</button>
     <input id="filePicker" type="file" accept="application/json" multiple />
   </header>
-  <p class="muted">This page attempts to load ../public/export/survey_summary.json by default. Or click “Load JSON Manually” to select summary/responses JSON files.</p>
+  <p class="muted">This page attempts to load ../public/export/survey_summary.json by default. Or click “Load JSON Manually” to select summary exports.</p>
 
   <div class="grid">
     <div class="card" id="cardTotals">
       <h3>Totals</h3>
-      <div id="totalResponses" class="row"><span>Total Responses</span><b>—</b></div>
-      <div id="avgSatisfaction" class="row"><span>Avg Satisfaction</span><b>—</b></div>
+      <div class="row"><span>Total Responses</span><b id="totalResponses">—</b></div>
+      <div class="row"><span>Avg Weekly Hours</span><b id="avgWeeklyHours">—</b></div>
+      <div class="row"><span>Avg Privacy Rating</span><b id="avgPrivacyRating">—</b></div>
+      <div class="row"><span>Avg Inventory Anxiety</span><b id="avgAnxiety">—</b></div>
       <div class="muted" id="generatedAt">—</div>
     </div>
     <div class="card">
-      <h3>Experience Mix</h3>
-      <div id="experienceList"></div>
+      <h3>Years Selling</h3>
+      <div id="yearsSellingList"></div>
     </div>
     <div class="card">
-      <h3>Glitch Reports</h3>
-      <div id="glitchList"></div>
+      <h3>Selling Commitment</h3>
+      <div id="commitmentList"></div>
     </div>
     <div class="card">
-      <h3>Top Features</h3>
-      <div id="featuresList"></div>
+      <h3>Risk Posture</h3>
+      <div id="riskPostureList"></div>
+    </div>
+    <div class="card">
+      <h3>Price Check Frequency</h3>
+      <div id="priceCheckList"></div>
+    </div>
+    <div class="card">
+      <h3>Signal Menu (Top)</h3>
+      <div id="signalMenuList"></div>
+    </div>
+    <div class="card">
+      <h3>Sourcing Style (Top)</h3>
+      <div id="sourcingStyleList"></div>
+    </div>
+    <div class="card">
+      <h3>Safety Nets (Top)</h3>
+      <div id="safetyNetsList"></div>
+    </div>
+    <div class="card">
+      <h3>Learning Sources (Top)</h3>
+      <div id="learningSourcesList"></div>
+    </div>
+    <div class="card">
+      <h3>Free Text Signals</h3>
+      <ul id="textCounts"></ul>
     </div>
   </div>
 
@@ -54,29 +82,41 @@
 
   <script>
     const els = {
-      totalResponses: document.getElementById('totalResponses').querySelector('b'),
-      avgSatisfaction: document.getElementById('avgSatisfaction').querySelector('b'),
+      totalResponses: document.getElementById('totalResponses'),
+      avgWeeklyHours: document.getElementById('avgWeeklyHours'),
+      avgPrivacyRating: document.getElementById('avgPrivacyRating'),
+      avgAnxiety: document.getElementById('avgAnxiety'),
       generatedAt: document.getElementById('generatedAt'),
-      experienceList: document.getElementById('experienceList'),
-      glitchList: document.getElementById('glitchList'),
-      featuresList: document.getElementById('featuresList'),
+      yearsSellingList: document.getElementById('yearsSellingList'),
+      commitmentList: document.getElementById('commitmentList'),
+      riskPostureList: document.getElementById('riskPostureList'),
+      priceCheckList: document.getElementById('priceCheckList'),
+      signalMenuList: document.getElementById('signalMenuList'),
+      sourcingStyleList: document.getElementById('sourcingStyleList'),
+      safetyNetsList: document.getElementById('safetyNetsList'),
+      learningSourcesList: document.getElementById('learningSourcesList'),
+      textCounts: document.getElementById('textCounts'),
       btnLoad: document.getElementById('btnLoad'),
       filePicker: document.getElementById('filePicker'),
     };
 
     function renderBars(container, data) {
       container.innerHTML = '';
-      const entries = Object.entries(data);
-      const max = Math.max(1, ...entries.map(([,v]) => v));
-      for (const [k, v] of entries) {
+      const entries = Object.entries(data || {});
+      if (!entries.length) {
+        container.textContent = '—';
+        return;
+      }
+      const max = Math.max(1, ...entries.map(([, v]) => v));
+      for (const [label, value] of entries.sort((a, b) => b[1] - a[1])) {
         const wrap = document.createElement('div');
         const row = document.createElement('div');
         row.className = 'row';
-        row.innerHTML = `<span>${k}</span><b>${v}</b>`;
+        row.innerHTML = `<span>${label}</span><b>${value}</b>`;
         const bar = document.createElement('div');
         bar.className = 'bar';
         const span = document.createElement('span');
-        span.style.width = ((v/max)*100).toFixed(1) + '%';
+        span.style.width = `${((value / max) * 100).toFixed(1)}%`;
         bar.appendChild(span);
         wrap.appendChild(row);
         wrap.appendChild(bar);
@@ -84,9 +124,13 @@
       }
     }
 
-    function renderTopFeatures(container, list) {
+    function renderTopList(container, list) {
       container.innerHTML = '';
-      const max = Math.max(1, ...list.map(x => x.count));
+      if (!Array.isArray(list) || !list.length) {
+        container.textContent = '—';
+        return;
+      }
+      const max = Math.max(1, ...list.map((item) => item.count));
       for (const item of list) {
         const wrap = document.createElement('div');
         const row = document.createElement('div');
@@ -95,12 +139,53 @@
         const bar = document.createElement('div');
         bar.className = 'bar';
         const span = document.createElement('span');
-        span.style.width = ((item.count/max)*100).toFixed(1) + '%';
+        span.style.width = `${((item.count / max) * 100).toFixed(1)}%`;
         bar.appendChild(span);
         wrap.appendChild(row);
         wrap.appendChild(bar);
         container.appendChild(wrap);
       }
+    }
+
+    function renderTextCounts(container, counts) {
+      container.innerHTML = '';
+      const entries = Object.entries(counts || {}).filter(([, v]) => v > 0);
+      if (!entries.length) {
+        container.innerHTML = '<li>No recent long-form answers logged.</li>';
+        return;
+      }
+      for (const [key, value] of entries.sort((a, b) => b[1] - a[1])) {
+        const li = document.createElement('li');
+        li.textContent = `${key.replace(/_/g, ' ')} • ${value}`;
+        container.appendChild(li);
+      }
+    }
+
+    function pullAverage(summary, key) {
+      const data = summary.averages?.[key];
+      if (!data) return '—';
+      if (typeof data.mean === 'number') return data.mean.toFixed(2);
+      return '—';
+    }
+
+    function applySummary(summary) {
+      els.totalResponses.textContent = summary.totalResponses ?? '—';
+      els.avgWeeklyHours.textContent = pullAverage(summary, 'weekly_hours');
+      els.avgPrivacyRating.textContent = pullAverage(summary, 'privacy_rating');
+      els.avgAnxiety.textContent = pullAverage(summary, 'inventory_anxiety');
+      els.generatedAt.textContent = summary.generatedAt || '';
+
+      renderBars(els.yearsSellingList, summary.counts?.years_selling);
+      renderBars(els.commitmentList, summary.counts?.selling_commitment);
+      renderBars(els.riskPostureList, summary.counts?.risk_posture);
+      renderBars(els.priceCheckList, summary.counts?.price_check_frequency);
+
+      renderTopList(els.signalMenuList, summary.multiSelectTop?.signal_menu);
+      renderTopList(els.sourcingStyleList, summary.multiSelectTop?.sourcing_style);
+      renderTopList(els.safetyNetsList, summary.multiSelectTop?.safety_nets);
+      renderTopList(els.learningSourcesList, summary.multiSelectTop?.learning_sources);
+
+      renderTextCounts(els.textCounts, summary.textResponseCounts);
     }
 
     async function tryAutoLoad() {
@@ -114,27 +199,21 @@
       }
     }
 
-    function applySummary(summary) {
-      els.totalResponses.textContent = summary.totalResponses ?? '—';
-      els.avgSatisfaction.textContent = summary.avgSatisfaction ?? '—';
-      els.generatedAt.textContent = summary.generatedAt || '';
-      renderBars(els.experienceList, summary.byExperience || {});
-      renderBars(els.glitchList, summary.glitchCounts || {});
-      renderTopFeatures(els.featuresList, summary.topFeatures || []);
-    }
-
     els.btnLoad.addEventListener('click', () => els.filePicker.click());
     els.filePicker.addEventListener('change', async (ev) => {
       const files = Array.from(ev.target.files || []);
-      const summaryFile = files.find(f => /summary\.json$/i.test(f.name)) || files[0];
+      const summaryFile = files.find((f) => /summary\.json$/i.test(f.name)) || files[0];
       if (!summaryFile) return;
-      const text = await summaryFile.text();
-      const summary = JSON.parse(text);
-      applySummary(summary);
+      try {
+        const text = await summaryFile.text();
+        const summary = JSON.parse(text);
+        applySummary(summary);
+      } catch (err) {
+        console.error('Failed to load summary JSON:', err);
+      }
     });
 
     tryAutoLoad();
   </script>
 </body>
 </html>
-

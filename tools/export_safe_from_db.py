@@ -24,7 +24,19 @@ OUT_DIR = os.path.join(BASE, '..', 'public', 'export')
 OUT_SUMMARY = os.path.join(OUT_DIR, 'survey_summary.json')
 OUT_RESPONSES = os.path.join(OUT_DIR, 'survey_responses.json')
 
-EXCLUDE_FIELDS = { 'contact', 'email', 'phone' }
+EXCLUDE_FIELDS = {'contact', 'email', 'phone'}
+COUNT_KEYS = [
+    'years_selling',
+    'selling_commitment',
+    'risk_posture',
+    'price_check_frequency',
+    'experiment_cadence',
+    'ai_trust_temperature',
+    'community_interest',
+]
+NUMERIC_KEYS = ('weekly_hours', 'inventory_anxiety', 'privacy_rating')
+MULTI_KEYS = ('sourcing_style', 'signal_menu', 'safety_nets', 'learning_sources')
+TEXT_KEYS = ('repricing_stack', 'memorable_glitch', 'wishlist_feature')
 
 def ensure_dir(p):
     os.makedirs(p, exist_ok=True)
@@ -74,67 +86,77 @@ def table_exists(conn, name: str) -> bool:
     cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (name,))
     return cur.fetchone() is not None
 
-def features_counts(conn, responses):
+def multi_counts(conn, responses):
+    counters = {key: Counter() for key in MULTI_KEYS}
     if table_exists(conn, 'response_selections'):
         cur = conn.cursor()
         cur.execute("""
-            SELECT rs.option_key, COUNT(*) as c
+            SELECT q.key, rs.option_key, COUNT(*) as c
             FROM response_selections rs
             JOIN questions q ON q.id = rs.question_id
-            WHERE q.key = 'features'
-            GROUP BY rs.option_key
+            GROUP BY q.key, rs.option_key
         """)
-        return Counter({ row[0]: row[1] for row in cur.fetchall() })
-    # Fallback to splitting response values
-    features = Counter()
+        for key, option, count in cur.fetchall():
+            if key in counters:
+                counters[key][str(option)] = count
+        return counters
+
     for r in responses:
-        feats = r.get('features')
-        if feats:
-            for item in str(feats).split('; '):
-                item = item.strip()
-                if item:
-                    features[item] += 1
-    return features
+        for key in MULTI_KEYS:
+            raw = r.get(key)
+            if not raw:
+                continue
+            if isinstance(raw, list):
+                items = raw
+            else:
+                items = [s.strip() for s in str(raw).split(';') if s.strip()]
+            for item in items:
+                counters[key][item] += 1
+    return counters
 
 def aggregate(conn, responses):
-    by_experience = Counter()
-    glitch_counts = Counter()
-    features = Counter()
-    free_text_counts = Counter()
-    sat_sum = 0.0
-    sat_count = 0
-
-    for r in responses:
-        exp = (r.get('experience') or '').strip()
-        if exp:
-            by_experience[exp] += 1
-        g = (r.get('glitch') or '').strip()
-        if g:
-            glitch_counts[g] += 1
-        s = to_number(r.get('satisfaction'))
-        if s is not None:
-            sat_sum += s
-            sat_count += 1
-        # features counted later from DB (selections) or fallback
-    for f in ['painpoint', 'valuable_features', 'trust_ai_reason', 'feature_request', 'monitoring']:
-        if r.get(f):
-            free_text_counts[f] += 1
-
-    # compute features counts
-    features = features_counts(conn, responses)
-
     summary = {
         'generatedAt': datetime.now(timezone.utc).isoformat(),
         'totalResponses': len(responses),
-        'byExperience': dict(by_experience),
-        'avgSatisfaction': round(sat_sum / sat_count, 2) if sat_count else None,
-        'glitchCounts': dict(glitch_counts),
-        'topFeatures': [
-            {'name': name, 'count': count}
-            for name, count in features.most_common(15)
-        ],
-        'freeTextCounts': dict(free_text_counts),
+        'counts': {key: {} for key in COUNT_KEYS},
+        'averages': {key: {'mean': None, 'count': 0} for key in NUMERIC_KEYS},
+        'multiSelectTop': {key: [] for key in MULTI_KEYS},
+        'textResponseCounts': {key: 0 for key in TEXT_KEYS},
     }
+
+    numeric_stats = {key: {'sum': 0.0, 'count': 0} for key in NUMERIC_KEYS}
+
+    for r in responses:
+        for key in COUNT_KEYS:
+            val = (r.get(key) or '').strip()
+            if val:
+                summary['counts'][key][val] = summary['counts'][key].get(val, 0) + 1
+
+        for key in NUMERIC_KEYS:
+            num = to_number(r.get(key))
+            if num is not None:
+                numeric_stats[key]['sum'] += num
+                numeric_stats[key]['count'] += 1
+
+        for key in TEXT_KEYS:
+            raw = r.get(key)
+            if isinstance(raw, str) and raw.strip():
+                summary['textResponseCounts'][key] += 1
+
+    for key, stat in numeric_stats.items():
+        if stat['count']:
+            mean = round(stat['sum'] / stat['count'], 2)
+            summary['averages'][key] = {'mean': mean, 'count': stat['count']}
+        else:
+            summary['averages'][key] = {'mean': None, 'count': 0}
+
+    counters = multi_counts(conn, responses)
+    for key, counter in counters.items():
+        summary['multiSelectTop'][key] = [
+            {'name': name, 'count': count}
+            for name, count in counter.most_common(15)
+        ]
+
     return summary
 
 def main():

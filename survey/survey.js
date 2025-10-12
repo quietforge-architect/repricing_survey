@@ -64,6 +64,15 @@ function refreshButtons() {
   submitBtn.hidden = !isLast;
   nextBtn.disabled = sending;
   submitBtn.disabled = sending;
+  // update next button label to be more conclusion-oriented on penultimate page
+  const isPenultimate = currentPage === pages.length - 2;
+  if (isPenultimate) {
+    nextBtn.textContent = 'Review & Submit';
+    nextBtn.setAttribute('aria-label', 'Review your answers and go to submit');
+  } else {
+    nextBtn.textContent = 'Save & Continue';
+    nextBtn.setAttribute('aria-label', 'Save progress and continue to the next section');
+  }
 }
 
 async function validatePage(index) {
@@ -119,7 +128,7 @@ async function submitProgress(payload, { partial }) {
 
   sending = true;
   refreshButtons();
-  announce(partial ? 'Saving progress…' : 'Sending final answers…');
+  announce(partial ? 'Saving progress...' : 'Sending final answers...');
 
   const submission = {
     ...payload,
@@ -155,7 +164,7 @@ async function submitProgress(payload, { partial }) {
     return json;
   } catch (err) {
     console.warn('Survey submission failed:', err);
-    announce('Could not reach the server. Your answers are saved locally—try again soon.', true);
+    announce('Could not reach the server. Your answers are saved locally; please try again soon.', true);
   } finally {
     sending = false;
     refreshButtons();

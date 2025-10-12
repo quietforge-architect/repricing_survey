@@ -57,7 +57,22 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-const MULTI_KEYS = ['model', 'features'];
+const MULTI_KEYS = ['sourcing_style', 'signal_menu', 'safety_nets', 'learning_sources'];
+const SUMMARY_COUNT_KEYS = [
+  'years_selling',
+  'selling_commitment',
+  'risk_posture',
+  'price_check_frequency',
+  'experiment_cadence',
+  'ai_trust_temperature',
+  'community_interest',
+];
+const SUMMARY_NUMERIC_KEYS = {
+  weekly_hours: true,
+  inventory_anxiety: true,
+  privacy_rating: true,
+};
+const SUMMARY_TEXT_KEYS = ['repricing_stack', 'memorable_glitch', 'wishlist_feature'];
 const TOKEN_FIELDS = new Set(['_submit_token', 'submit_token']);
 
 function extractBearer(headerValue = '') {
@@ -166,7 +181,12 @@ app.post('/submit', (req, res) => {
       insV.run(responseId, qid, key, valueForStore);
 
       if (MULTI_KEYS.includes(key)) {
-        const items = isArray ? rawVal : String(rawVal || '').split(/;\s*/).map(s => s.trim()).filter(Boolean);
+        const items = isArray
+          ? rawVal
+          : String(rawVal || '')
+              .split(/;\s*/)
+              .map((s) => s.trim())
+              .filter(Boolean);
         for (const it of items) {
           insSel.run(responseId, qid, String(it), null);
         }
@@ -235,34 +255,134 @@ app.get('/api/v2/summary', (req, res) => {
   try {
     const hasV2 = tableExists('responses') && tableExists('response_values');
     if (!hasV2) return res.status(503).json({ ok:false, error:'v2 schema missing. Run init-db.' });
-    const out = { generatedAt: new Date().toISOString(), totalResponses: 0, byExperience: {}, avgSatisfaction: null, glitchCounts: {}, topFeatures: [], freeTextCounts: {} };
-    const tr = db.prepare('SELECT COUNT(*) as c FROM responses').get();
-    out.totalResponses = (tr && tr.c) || 0;
-    db.prepare("SELECT value, COUNT(*) c FROM response_values WHERE key='experience' GROUP BY value").all().forEach(r => { if (r.value) out.byExperience[r.value] = r.c; });
-    const satRows = db.prepare("SELECT value FROM response_values WHERE key='satisfaction'").all();
-    let sSum = 0, sCnt = 0; for (const r of satRows) { const n = Number(r.value); if (Number.isFinite(n)) { sSum += n; sCnt++; } }
-    out.avgSatisfaction = sCnt ? +(sSum / sCnt).toFixed(2) : null;
-    db.prepare("SELECT value, COUNT(*) c FROM response_values WHERE key='glitch' GROUP BY value").all().forEach(r => { if (r.value) out.glitchCounts[r.value] = r.c; });
 
-    // Features from selections if present; else fallback to split
-    const hasSel = tableExists('response_selections');
-    const featMap = new Map();
-    if (hasSel) {
-      db.prepare("SELECT option_key, COUNT(*) c FROM response_selections rs JOIN questions q ON q.id=rs.question_id WHERE q.key='features' GROUP BY option_key").all()
-        .forEach(r => featMap.set(String(r.option_key), r.c));
-    } else {
-      db.prepare("SELECT value FROM response_values WHERE key='features'").all().forEach(r => {
-        const parts = String(r.value || '').split(/;\s*/).map(s => s.trim()).filter(Boolean);
-        parts.forEach(p => featMap.set(p, (featMap.get(p) || 0) + 1));
+    const responses = new Map();
+    const ensureResponse = (id, submittedAt) => {
+      if (!responses.has(id)) {
+        responses.set(id, {
+          submittedAt,
+          values: Object.create(null),
+          multi: Object.create(null),
+        });
+      }
+      return responses.get(id);
+    };
+
+    const valueRows = db.prepare(`
+      SELECT r.id AS response_id, r.submitted_at, v.key, v.value
+      FROM responses r
+      JOIN response_values v ON v.response_id = r.id
+    `).all();
+
+    valueRows.forEach((row) => {
+      const record = ensureResponse(row.response_id, row.submitted_at);
+      record.values[row.key] = row.value;
+    });
+
+    if (tableExists('response_selections')) {
+      db.prepare(`
+        SELECT rs.response_id, q.key AS question_key, rs.option_key
+        FROM response_selections rs
+        JOIN questions q ON q.id = rs.question_id
+      `).all().forEach((row) => {
+        if (!MULTI_KEYS.includes(row.question_key)) return;
+        const record = ensureResponse(row.response_id, null);
+        if (!record.multi[row.question_key]) record.multi[row.question_key] = new Set();
+        record.multi[row.question_key].add(row.option_key);
       });
     }
-    out.topFeatures = Array.from(featMap.entries()).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([name,count])=>({name,count}));
 
-    const freeKeys = ['painpoint','valuable_features','trust_ai_reason','feature_request','monitoring'];
-    const placeholders = freeKeys.map(()=>'?').join(',');
-    db.prepare(`SELECT key, COUNT(*) c FROM response_values WHERE key IN (${placeholders}) AND TRIM(COALESCE(value,''))!='' GROUP BY key`).all(...freeKeys)
-      .forEach(r => { out.freeTextCounts[r.key] = r.c; });
-    return res.json(out);
+    const summary = {
+      generatedAt: new Date().toISOString(),
+      totalResponses: responses.size,
+      counts: {},
+      averages: {},
+      multiSelectTop: {},
+      textResponseCounts: {},
+    };
+
+    SUMMARY_COUNT_KEYS.forEach((key) => { summary.counts[key] = {}; });
+    Object.keys(SUMMARY_NUMERIC_KEYS).forEach((key) => {
+      summary.averages[key] = { mean: null, count: 0 };
+    });
+    SUMMARY_TEXT_KEYS.forEach((key) => { summary.textResponseCounts[key] = 0; });
+    MULTI_KEYS.forEach((key) => { summary.multiSelectTop[key] = []; });
+
+    const multiTally = new Map();
+    MULTI_KEYS.forEach((key) => multiTally.set(key, new Map()));
+
+    const numericStats = new Map();
+    Object.keys(SUMMARY_NUMERIC_KEYS).forEach((key) => numericStats.set(key, { sum: 0, count: 0 }));
+
+    responses.forEach((record) => {
+      const values = record.values;
+      SUMMARY_COUNT_KEYS.forEach((key) => {
+        const raw = (values[key] || '').trim();
+        if (!raw) return;
+        const bucket = summary.counts[key];
+        bucket[raw] = (bucket[raw] || 0) + 1;
+      });
+
+      Object.keys(SUMMARY_NUMERIC_KEYS).forEach((key) => {
+        const raw = values[key];
+        if (raw == null || raw === '') return;
+        const num = Number(raw);
+        if (Number.isFinite(num)) {
+          const stat = numericStats.get(key);
+          stat.sum += num;
+          stat.count += 1;
+        }
+      });
+
+      SUMMARY_TEXT_KEYS.forEach((key) => {
+        const raw = values[key];
+        if (typeof raw === 'string' && raw.trim()) {
+          summary.textResponseCounts[key] += 1;
+        }
+      });
+
+      MULTI_KEYS.forEach((key) => {
+        const selections = record.multi[key];
+        let items = selections ? Array.from(selections) : [];
+        if (!items.length) {
+          const fallback = values[key];
+          if (fallback) {
+            items = String(fallback)
+              .split(/;\s*/)
+              .map((s) => s.trim())
+              .filter(Boolean);
+          }
+        }
+        if (!items.length) return;
+        const tally = multiTally.get(key);
+        items.forEach((item) => {
+          const name = String(item);
+          tally.set(name, (tally.get(name) || 0) + 1);
+        });
+      });
+    });
+
+    Object.entries(Object.fromEntries(numericStats)).forEach(([key, stat]) => {
+      if (stat.count) {
+        summary.averages[key] = {
+          mean: Number((stat.sum / stat.count).toFixed(2)),
+          count: stat.count,
+        };
+      } else {
+        summary.averages[key] = { mean: null, count: 0 };
+      }
+    });
+
+    MULTI_KEYS.forEach((key) => {
+      const tally = multiTally.get(key);
+      const sorted = Array.from(tally.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([name, count]) => ({ name, count }));
+      summary.multiSelectTop[key] = sorted;
+    });
+
+    return res.json(summary);
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e && e.message) });
   }

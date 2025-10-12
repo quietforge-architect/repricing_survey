@@ -18,7 +18,7 @@ ROOT = os.path.dirname(os.path.dirname(__file__))
 DEFAULT_JSONL = os.path.join(ROOT, 'agents', 'logic', 'local-collector', 'data', 'submissions.jsonl')
 DB_PATH = os.path.join(ROOT, 'db', 'survey.sqlite')
 
-MULTI_KEYS = ['model', 'features']
+MULTI_KEYS = ['sourcing_style', 'signal_menu', 'safety_nets', 'learning_sources']
 
 def millis_from_iso(ts):
     # parse ISO timestamp to milliseconds since epoch

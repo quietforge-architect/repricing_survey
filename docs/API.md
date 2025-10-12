@@ -13,7 +13,7 @@ Endpoints
   - Response: { items: [ { Timestamp, ...fields } ], count, limit, offset }
 
 - GET /api/v2/summary
-  - Aggregates: totalResponses, byExperience, avgSatisfaction, glitchCounts, topFeatures, freeTextCounts.
+  - Aggregates: overall totals, categorical breakdowns (years_selling, selling_commitment, risk_posture, and more), numeric averages (weekly_hours, privacy_rating, inventory_anxiety), top multi-select choices (signal_menu, sourcing_style, safety_nets, learning_sources), plus counts of long-form responses.
   - Requires v2 schema; returns 503 if missing (run init-db).
   - Response: { generatedAt, totalResponses, ... }
 

@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+import math
 import sqlite3
 import os
 import time
 import re
+from collections import Counter
 from datetime import datetime
 
 app = Flask(__name__)
@@ -43,7 +45,18 @@ def sanitize_value(v, allow_list):
     v = re.sub(r'\b([A-Z][a-z\'`-]{1,30})\s+([A-Z][a-z\'`-]{1,30})(?:\s+([A-Z][a-z\'`-]{1,30}))?\b', lambda m: '<REDACTED>' if len(m.group(0)) < 60 else m.group(0), v)
     return v
 
-MULTI_KEYS = ['model', 'features']
+MULTI_KEYS = ['sourcing_style', 'signal_menu', 'safety_nets', 'learning_sources']
+SUMMARY_COUNT_KEYS = [
+    'years_selling',
+    'selling_commitment',
+    'risk_posture',
+    'price_check_frequency',
+    'experiment_cadence',
+    'ai_trust_temperature',
+    'community_interest',
+]
+SUMMARY_NUMERIC_KEYS = ('weekly_hours', 'inventory_anxiety', 'privacy_rating')
+SUMMARY_TEXT_KEYS = ('repricing_stack', 'memorable_glitch', 'wishlist_feature')
 TOKEN_FIELDS = {'_submit_token', 'submit_token'}
 
 def _extract_bearer(header_value):
@@ -246,60 +259,102 @@ def summary():
         if not cursor.fetchone():
             return jsonify({'ok': False, 'error': 'v2 schema missing. Run init-db.'}), 503
 
-        out = {'generatedAt': datetime.now().isoformat(), 'totalResponses': 0, 'byExperience': {}, 'avgSatisfaction': None, 'glitchCounts': {}, 'topFeatures': [], 'freeTextCounts': {}}
-        cursor.execute('SELECT COUNT(*) FROM responses')
-        out['totalResponses'] = cursor.fetchone()[0]
+        cursor.execute(
+            '''
+            SELECT r.id, r.submitted_at, v.key, v.value
+            FROM responses r
+            JOIN response_values v ON v.response_id = r.id
+            '''
+        )
+        responses = {}
+        for response_id, submitted_at, key, value in cursor.fetchall():
+            rec = responses.setdefault(
+                response_id, {'submitted_at': submitted_at, 'values': {}, 'multi': {}}
+            )
+            rec['values'][key] = value
 
-        cursor.execute("SELECT value, COUNT(*) FROM response_values WHERE key='experience' GROUP BY value")
-        for row in cursor.fetchall():
-            if row[0]:
-                out['byExperience'][row[0]] = row[1]
-
-        cursor.execute("SELECT value FROM response_values WHERE key='satisfaction'")
-        sat_rows = cursor.fetchall()
-        s_sum = 0
-        s_cnt = 0
-        for r in sat_rows:
-            try:
-                n = float(r[0])
-                s_sum += n
-                s_cnt += 1
-            except:
-                pass
-        out['avgSatisfaction'] = round(s_sum / s_cnt, 2) if s_cnt else None
-
-        cursor.execute("SELECT value, COUNT(*) FROM response_values WHERE key='glitch' GROUP BY value")
-        for row in cursor.fetchall():
-            if row[0]:
-                out['glitchCounts'][row[0]] = row[1]
-
-        feat_map = {}
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='response_selections'")
-        has_sel = cursor.fetchone()
-        if has_sel:
-            cursor.execute("SELECT rs.option_key, COUNT(*) FROM response_selections rs JOIN questions q ON q.id=rs.question_id WHERE q.key='features' GROUP BY rs.option_key")
-            for row in cursor.fetchall():
-                feat_map[str(row[0])] = row[1]
-        else:
-            cursor.execute("SELECT value FROM response_values WHERE key='features'")
-            for row in cursor.fetchall():
-                parts = str(row[0] or '').split('; ')
-                for p in parts:
-                    p = p.strip()
-                    if p:
-                        feat_map[p] = feat_map.get(p, 0) + 1
+        if cursor.fetchone():
+            cursor.execute(
+                '''
+                SELECT rs.response_id, q.key, rs.option_key
+                FROM response_selections rs
+                JOIN questions q ON q.id = rs.question_id
+                '''
+            )
+            for response_id, question_key, option_key in cursor.fetchall():
+                if question_key not in MULTI_KEYS:
+                    continue
+                rec = responses.setdefault(
+                    response_id, {'submitted_at': None, 'values': {}, 'multi': {}}
+                )
+                rec['multi'].setdefault(question_key, set()).add(option_key)
 
-        out['topFeatures'] = sorted(feat_map.items(), key=lambda x: x[1], reverse=True)[:15]
-        out['topFeatures'] = [{'name': k, 'count': v} for k, v in out['topFeatures']]
+        summary = {
+            'generatedAt': datetime.utcnow().isoformat(),
+            'totalResponses': len(responses),
+            'counts': {key: {} for key in SUMMARY_COUNT_KEYS},
+            'averages': {key: {'mean': None, 'count': 0} for key in SUMMARY_NUMERIC_KEYS},
+            'multiSelectTop': {key: [] for key in MULTI_KEYS},
+            'textResponseCounts': {key: 0 for key in SUMMARY_TEXT_KEYS},
+        }
 
-        free_keys = ['painpoint', 'valuable_features', 'trust_ai_reason', 'feature_request', 'monitoring']
-        placeholders = ','.join('?' * len(free_keys))
-        cursor.execute(f"SELECT key, COUNT(*) FROM response_values WHERE key IN ({placeholders}) AND TRIM(COALESCE(value,''))!='' GROUP BY key", free_keys)
-        for row in cursor.fetchall():
-            out['freeTextCounts'][row[0]] = row[1]
+        multi_counters = {key: Counter() for key in MULTI_KEYS}
+        numeric_stats = {key: {'sum': 0.0, 'count': 0} for key in SUMMARY_NUMERIC_KEYS}
+
+        for rec in responses.values():
+            values = rec['values']
+
+            for key in SUMMARY_COUNT_KEYS:
+                raw = (values.get(key) or '').strip()
+                if raw:
+                    bucket = summary['counts'][key]
+                    bucket[raw] = bucket.get(raw, 0) + 1
+
+            for key in SUMMARY_NUMERIC_KEYS:
+                raw = values.get(key)
+                if raw is None or raw == '':
+                    continue
+                try:
+                    num = float(raw)
+                except (TypeError, ValueError):
+                    continue
+                if math.isfinite(num):
+                    numeric_stats[key]['sum'] += num
+                    numeric_stats[key]['count'] += 1
+
+            for key in SUMMARY_TEXT_KEYS:
+                raw = values.get(key)
+                if isinstance(raw, str) and raw.strip():
+                    summary['textResponseCounts'][key] += 1
+
+            for key in MULTI_KEYS:
+                selections = rec['multi'].get(key)
+                if selections:
+                    items = list(selections)
+                else:
+                    fallback = values.get(key)
+                    if not fallback:
+                        continue
+                    items = [s.strip() for s in str(fallback).split(';') if s.strip()]
+                for item in items:
+                    multi_counters[key][str(item)] += 1
+
+        for key, stat in numeric_stats.items():
+            if stat['count']:
+                mean = round(stat['sum'] / stat['count'], 2)
+                summary['averages'][key] = {'mean': mean, 'count': stat['count']}
+            else:
+                summary['averages'][key] = {'mean': None, 'count': 0}
+
+        for key, counter in multi_counters.items():
+            summary['multiSelectTop'][key] = [
+                {'name': name, 'count': count}
+                for name, count in counter.most_common(15)
+            ]
 
         db.close()
-        return jsonify(out)
+        return jsonify(summary)
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 500
 

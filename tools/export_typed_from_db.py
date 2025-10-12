@@ -13,6 +13,7 @@ Writes:
 import json
 import os
 import sqlite3
+from collections import Counter
 from datetime import datetime, timezone
 
 BASE = os.path.dirname(__file__)
@@ -23,6 +24,18 @@ DB_PATH = ENV_DB or DEFAULT_DB
 OUT_DIR = os.path.join(BASE, '..', 'public', 'export')
 OUT_RESP = os.path.join(OUT_DIR, 'survey_typed_responses.json')
 OUT_SUM = os.path.join(OUT_DIR, 'survey_typed_summary.json')
+COUNT_KEYS = [
+    'years_selling',
+    'selling_commitment',
+    'risk_posture',
+    'price_check_frequency',
+    'experiment_cadence',
+    'ai_trust_temperature',
+    'community_interest',
+]
+NUMERIC_KEYS = ('weekly_hours', 'inventory_anxiety', 'privacy_rating')
+MULTI_KEYS = ('sourcing_style', 'signal_menu', 'safety_nets', 'learning_sources')
+TEXT_KEYS = ('repricing_stack', 'memorable_glitch', 'wishlist_feature')
 
 def ensure_dir(p):
     os.makedirs(p, exist_ok=True)
@@ -106,30 +119,57 @@ def typed_exports(conn, schema):
 
     # typed summary
     total = len(items)
-    by_exp = {}
-    glitch = {}
-    sat_sum = 0.0
-    sat_cnt = 0
-    feat = {}
-    for it in items:
-        exp = (it.get('experience') or '')
-        if exp: by_exp[exp] = by_exp.get(exp, 0) + 1
-        g = (it.get('glitch') or '')
-        if g: glitch[g] = glitch.get(g, 0) + 1
-        s = it.get('satisfaction')
-        if isinstance(s, (int, float)):
-            sat_sum += float(s); sat_cnt += 1
-        fs = it.get('features') or []
-        for f in (fs if isinstance(fs, list) else []):
-            feat[f] = feat.get(f, 0) + 1
     typed_summary = {
         'generatedAt': datetime.now(timezone.utc).isoformat(),
         'totalResponses': total,
-        'byExperience': by_exp,
-        'avgSatisfaction': round(sat_sum/sat_cnt, 2) if sat_cnt else None,
-        'glitchCounts': glitch,
-        'topFeatures': [ {'name': k, 'count': v} for k,v in sorted(feat.items(), key=lambda kv: -kv[1])[:15] ]
+        'counts': {key: {} for key in COUNT_KEYS},
+        'averages': {key: {'mean': None, 'count': 0} for key in NUMERIC_KEYS},
+        'multiSelectTop': {key: [] for key in MULTI_KEYS},
+        'textResponseCounts': {key: 0 for key in TEXT_KEYS},
     }
+
+    numeric_stats = {key: {'sum': 0.0, 'count': 0} for key in NUMERIC_KEYS}
+    multi_counters = {key: Counter() for key in MULTI_KEYS}
+
+    for it in items:
+        for key in COUNT_KEYS:
+            val = it.get(key)
+            if isinstance(val, str):
+                val = val.strip()
+            if val:
+                typed_summary['counts'][key][val] = typed_summary['counts'][key].get(val, 0) + 1
+
+        for key in NUMERIC_KEYS:
+            val = it.get(key)
+            if isinstance(val, (int, float)):
+                numeric_stats[key]['sum'] += float(val)
+                numeric_stats[key]['count'] += 1
+
+        for key in TEXT_KEYS:
+            raw = it.get(key)
+            if isinstance(raw, str) and raw.strip():
+                typed_summary['textResponseCounts'][key] += 1
+
+        for key in MULTI_KEYS:
+            vals = it.get(key)
+            if isinstance(vals, list):
+                for entry in vals:
+                    entry_str = str(entry).strip()
+                    if entry_str:
+                        multi_counters[key][entry_str] += 1
+
+    for key, stat in numeric_stats.items():
+        if stat['count']:
+            mean = round(stat['sum'] / stat['count'], 2)
+            typed_summary['averages'][key] = {'mean': mean, 'count': stat['count']}
+        else:
+            typed_summary['averages'][key] = {'mean': None, 'count': 0}
+
+    for key, counter in multi_counters.items():
+        typed_summary['multiSelectTop'][key] = [
+            {'name': name, 'count': count}
+            for name, count in counter.most_common(15)
+        ]
 
     return items, typed_summary
 
