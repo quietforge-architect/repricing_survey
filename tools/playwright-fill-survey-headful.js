@@ -32,87 +32,86 @@ async function humanDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function runHeadful() {
   const { chromium } = require('playwright');
-  const browser = await chromium.launch({ headless: false, slowMo: 100 });
+  const browser = await chromium.launch({ headless: false, slowMo: 50 }); // Reduced to 50ms for faster execution
   const page = await browser.newPage();
-  const pageUrl = `http://localhost:${staticPort}/index.html`;
+  const pageUrl = `http://localhost:8080/index.html`; // Updated to containerized survey on 8080
   console.log('[headful] opening', pageUrl);
   await page.goto(pageUrl);
 
-  // Page 1: About You
-  await page.waitForSelector('select[name="experience"]');
-  await humanDelay(100);
-  await page.selectOption('select[name="experience"]', '1–3 years').catch(()=>{});
+  // Page 1: Shelf Life & Seller Lore
+  await page.waitForSelector('select[name="years_selling"]');
   await humanDelay(50);
-  await page.fill('input[name="sku_count"]', '987');
+  await page.selectOption('select[name="years_selling"]', 'Trilogy territory (3-5 years)').catch(()=>{});
   await humanDelay(50);
-  await page.click('input[name="model"][value="Retail / Online Arbitrage"]').catch(()=>{});
+  await page.selectOption('select[name="selling_commitment"]', 'Full-time and living on ISBNs').catch(()=>{});
   await humanDelay(50);
-  await page.fill('textarea[name="model_other"]', 'lorem headful');
+  await page.fill('input[name="weekly_hours"]', '120'); // max
   await humanDelay(50);
-  await page.fill('input[name="repricer"]', 'headful repricer');
+  await page.check('input[name="sourcing_style"][value="Library sale lightning raids"]').catch(()=>{});
+  await page.check('input[name="sourcing_style"][value="Estate sale archeology"]').catch(()=>{});
+  await page.check('input[name="sourcing_style"][value="Other secret chapter"]').catch(()=>{});
   await humanDelay(50);
-  await page.selectOption('select[name="keepa"]', 'Paid Plan').catch(()=>{});
+  await page.fill('input[name="non_book_inventory"]', 'A very long text to test short text input limits, perhaps up to 1000 characters or more to see if it breaks. '.repeat(10));
   await humanDelay(50);
   await page.click('#next'); // Next to page 2
 
-  // Page 2: Repricing Experience
-  await page.waitForSelector('input[name="satisfaction"]');
+  // Page 2: Daily Rituals & Tooling
+  await page.waitForSelector('select[name="listing_rhythm"]');
   await humanDelay(50);
-  await page.fill('input[name="satisfaction"]', '5');
+  await page.selectOption('select[name="listing_rhythm"]', 'Daily micro-sprints with a mug of something warm').catch(()=>{});
   await humanDelay(50);
-  await page.fill('textarea[name="painpoint"]', 'headful lorem painpoint');
+  await page.fill('textarea[name="repricing_stack"]', 'Very long text for textarea to test limits. '.repeat(100) + 'End of long text.');
   await humanDelay(50);
-  await page.selectOption('select[name="glitch"]', 'Not sure').catch(()=>{});
+  await page.selectOption('select[name="price_check_frequency"]', 'Multiple times a day (high caffeine mode)').catch(()=>{});
   await humanDelay(50);
-  await page.fill('textarea[name="glitch_details"]', 'maybe once');
+  await page.check('input[name="signal_menu"][value="Sales rank mood swings"]').catch(()=>{});
+  await page.check('input[name="signal_menu"][value="Buy Box tug-of-war"]').catch(()=>{});
+  await page.check('input[name="signal_menu"][value="Other secret sauce"]').catch(()=>{});
   await humanDelay(50);
-  await page.selectOption('select[name="style"]', 'Hybrid').catch(()=>{});
-  await humanDelay(50);
-  await page.check('input[name="features"][value="Reporting"]').catch(()=>{});
-  await humanDelay(50);
-  await page.fill('textarea[name="valuable_features"]', 'headful valuable features');
+  await page.fill('input[name="inventory_anxiety"]', '5'); // max
   await humanDelay(50);
   await page.click('#next'); // Next to page 3
 
-  // Page 3: AI, Data & Trust
-  await page.waitForSelector('select[name="ai_used"]');
+  // Page 3: Risk, Glitches & Experiments
+  await page.waitForSelector('select[name="risk_posture"]');
   await humanDelay(50);
-  await page.selectOption('select[name="ai_used"]', 'Yes').catch(()=>{});
+  await page.selectOption('select[name="risk_posture"]', 'Bold baron: chase upside, accept weirdness').catch(()=>{});
   await humanDelay(50);
-  await page.selectOption('select[name="ai_improvement"]', 'Unsure').catch(()=>{});
+  await page.fill('textarea[name="memorable_glitch"]', 'Long story about a glitch. '.repeat(50));
   await humanDelay(50);
-  await page.selectOption('select[name="trust_ai"]', 'Maybe').catch(()=>{});
+  await page.check('input[name="safety_nets"][value="Hard price floors/ceilings"]').catch(()=>{});
+  await page.check('input[name="safety_nets"][value="Manual review queue"]').catch(()=>{});
+  await page.check('input[name="safety_nets"][value="Other contingency ritual"]').catch(()=>{});
   await humanDelay(50);
-  await page.fill('textarea[name="trust_ai_reason"]', 'hesitant but curious');
+  await page.selectOption('select[name="experiment_cadence"]', 'Weekly tinkering').catch(()=>{});
   await humanDelay(50);
-  await page.fill('textarea[name="missing_data"]', 'faster inventory signals');
+  await page.check('input[name="learning_sources"][value="Seller forums or Discords"]').catch(()=>{});
+  await page.check('input[name="learning_sources"][value="YouTube deep dives"]').catch(()=>{});
+  await page.check('input[name="learning_sources"][value="Other rabbit holes"]').catch(()=>{});
   await humanDelay(50);
   await page.click('#next'); // Next to page 4
 
-  // Page 4: Wishlist & Privacy
-  await page.waitForSelector('textarea[name="trust_features"]');
+  // Page 4: Wishlist, Community & Follow-up
+  await page.waitForSelector('textarea[name="wishlist_feature"]');
   await humanDelay(50);
-  await page.fill('textarea[name="trust_features"]', 'audit logs, rollback');
+  await page.fill('textarea[name="wishlist_feature"]', 'Wish for something amazing. '.repeat(30));
   await humanDelay(50);
-  await page.selectOption('select[name="local_tool"]', 'Yes').catch(()=>{});
+  await page.selectOption('select[name="ai_trust_temperature"]', 'Hot and ready—AI is my co-pilot').catch(()=>{});
   await humanDelay(50);
-  await page.fill('input[name="privacy"]', '4');
+  await page.selectOption('select[name="community_interest"]', 'Yes, sign me up yesterday').catch(()=>{});
   await humanDelay(50);
-  await page.fill('textarea[name="monitoring"]', 'alerts and csvs');
+  await page.fill('input[name="privacy_rating"]', '5'); // max
   await humanDelay(50);
-  await page.fill('textarea[name="feature_request"]', 'undo button for bad reprices');
+  await page.fill('input[name="contact"]', 'test@example.com');
   await humanDelay(50);
-  await page.selectOption('select[name="anon_data"]', 'Maybe, depends on details').catch(()=>{});
-  await humanDelay(50);
-  await page.fill('input[name="contact"]', 'human@example.com');
 
   // Submit
   await page.click('#submitBtn');
 
   // Wait a bit for network
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(300); // Reduced
   // leave browser open a few seconds so user can inspect if needed
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(500); // Reduced
   await browser.close();
 }
 
