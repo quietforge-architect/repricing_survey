@@ -11,8 +11,11 @@ import sqlite3
 import time
 
 BASE = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE, 'data.sqlite')
-SCHEMA_V2_PATH = os.path.join(BASE, 'schema_v2.sql')
+# Prefer env DB_PATH, else default to db/survey.sqlite, else local data.sqlite
+ENV_DB = os.environ.get('SURVEY_DB_PATH') or os.environ.get('DB_PATH')
+DEFAULT_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(BASE))), 'db', 'survey.sqlite')
+DB_PATH = ENV_DB or (DEFAULT_DB if os.path.exists(DEFAULT_DB) else os.path.join(BASE, 'data.sqlite'))
+SCHEMA_V2_PATH = os.path.join(BASE, 'schema_v2.sql') if os.path.exists(os.path.join(BASE, 'schema_v2.sql')) else os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(BASE))), 'db', 'schema_v2.sql')
 
 def read_text(p):
     with open(p, 'r', encoding='utf-8') as f:
@@ -89,8 +92,16 @@ def main():
                 if not k:
                     continue
                 qid = ensure_question_id(k)
+                # Normalize arrays to "; " joined for response_values
+                value = '' if v is None else ('; '.join(v) if isinstance(v, list) else str(v))
                 cur.execute('INSERT OR IGNORE INTO response_values (response_id, question_id, key, value) VALUES (?, ?, ?, ?)',
-                            (response_id, qid, k, '' if v is None else str(v)))
+                            (response_id, qid, k, value))
+                # Populate selections for known multi-select keys
+                if k in ('features', 'model'):
+                    items = v if isinstance(v, list) else str(v or '').split('; ')
+                    for it in [i.strip() for i in items if str(i).strip()]:
+                        cur.execute('INSERT OR IGNORE INTO response_selections (response_id, question_id, option_key, option_label) VALUES (?, ?, ?, ?)',
+                                    (response_id, qid, it, None))
             migrated += 1
 
         conn.commit()
@@ -103,4 +114,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

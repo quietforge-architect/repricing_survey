@@ -1,18 +1,22 @@
 {
   "name": "amazon-repricing-survey",
   "version": "1.0.0",
-  "author": "Quiet Forge Development Studio",
-  "license": "MIT",
-  "schema_version": "v1.0.0",
-  "repo_url": "https://github.com/QuietForgeDev/amazon-repricing-survey",
-  "docs": [
-    "README.md",
-    "docs/architecture.md",
-    "docs/field_reference.md",
-    "docs/workflow_reference.md"
-  ],
-  "agents": [
-    "agents/tasks/task_manifest.json",
-    "agents/chat/conversation_logs.md"
-  ]
+  "modules": {
+    "apps_script_collector": "agents/integrations/google-apps-script/collector_advanced.gs",
+    "apps_script_host": "agents/integrations/google-apps-script/host_survey/",
+    "survey_html": "survey/index.html",
+    "local_collector": "agents/logic/local-collector/",
+    "sqlite_service": "agents/logic/sqlite-service/",
+    "db": "db/",
+    "export_tools": "tools/",
+    "docs": "docs/"
+  },
+  "schemas": {
+    "db_v2": "db/schema_v2.sql"
+  },
+  "tasks_manifest": {
+    "generated": "agents/tasks/task_manifest.generated.json",
+    "source": "agents/tasks/"
+  }
 }
+

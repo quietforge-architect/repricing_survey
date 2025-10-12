@@ -1,0 +1,136 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2025-10-12T00:08:16.984Z",
+  "fields": [
+    {
+      "key": "ai_improvement",
+      "type": "string",
+      "category": "AI_Trust"
+    },
+    {
+      "key": "ai_used",
+      "type": "string",
+      "category": "AI_Trust"
+    },
+    {
+      "key": "anon_data",
+      "type": "string",
+      "category": "Privacy"
+    },
+    {
+      "key": "contact",
+      "type": "string",
+      "category": "Participation"
+    },
+    {
+      "key": "experience",
+      "type": "ordinal",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "feature_request",
+      "type": "text_long",
+      "category": "Wishlist"
+    },
+    {
+      "key": "features",
+      "type": "multiselect",
+      "category": "RepricingExperience"
+    },
+    {
+      "key": "glitch",
+      "type": "string",
+      "category": "RepricingExperience"
+    },
+    {
+      "key": "glitch_details",
+      "type": "text_long",
+      "category": "RepricingExperience"
+    },
+    {
+      "key": "keepa",
+      "type": "string",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "local_tool",
+      "type": "string",
+      "category": "Wishlist"
+    },
+    {
+      "key": "missing_data",
+      "type": "text_long",
+      "category": "AI_Trust"
+    },
+    {
+      "key": "model",
+      "type": "multiselect",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "model_options",
+      "type": "checkbox-group",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "model_other",
+      "type": "text_long",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "monitoring",
+      "type": "text_long",
+      "category": "Participation"
+    },
+    {
+      "key": "painpoint",
+      "type": "text_long",
+      "category": "RepricingExperience"
+    },
+    {
+      "key": "privacy",
+      "type": "ordinal",
+      "category": "Privacy"
+    },
+    {
+      "key": "repricer",
+      "type": "string",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "satisfaction",
+      "type": "ordinal",
+      "category": "RepricingExperience"
+    },
+    {
+      "key": "sku_count",
+      "type": "numeric",
+      "category": "SellerProfile"
+    },
+    {
+      "key": "style",
+      "type": "string",
+      "category": "RepricingExperience"
+    },
+    {
+      "key": "trust_ai",
+      "type": "string",
+      "category": "AI_Trust"
+    },
+    {
+      "key": "trust_ai_reason",
+      "type": "text_long",
+      "category": "AI_Trust"
+    },
+    {
+      "key": "trust_features",
+      "type": "text_long",
+      "category": "Wishlist"
+    },
+    {
+      "key": "valuable_features",
+      "type": "text_long",
+      "category": "RepricingExperience"
+    }
+  ]
+}

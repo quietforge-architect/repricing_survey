@@ -15,7 +15,11 @@ from collections import Counter, defaultdict
 from datetime import datetime
 
 BASE = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE, '..', 'agents', 'logic', 'sqlite-service', 'data.sqlite')
+# Resolve DB path: prefer env DB_PATH or SURVEY_DB_PATH, else db/survey.sqlite, else legacy path
+ENV_DB = os.environ.get('SURVEY_DB_PATH') or os.environ.get('DB_PATH')
+DEFAULT_DB = os.path.join(BASE, '..', 'db', 'survey.sqlite')
+LEGACY_DB = os.path.join(BASE, '..', 'agents', 'logic', 'sqlite-service', 'data.sqlite')
+DB_PATH = ENV_DB or (DEFAULT_DB if os.path.exists(DEFAULT_DB) else LEGACY_DB)
 OUT_DIR = os.path.join(BASE, '..', 'public', 'export')
 OUT_SUMMARY = os.path.join(OUT_DIR, 'survey_summary.json')
 OUT_RESPONSES = os.path.join(OUT_DIR, 'survey_responses.json')
@@ -65,7 +69,34 @@ def to_number(s):
     except Exception:
         return None
 
-def aggregate(responses):
+def table_exists(conn, name: str) -> bool:
+    cur = conn.cursor()
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (name,))
+    return cur.fetchone() is not None
+
+def features_counts(conn, responses):
+    if table_exists(conn, 'response_selections'):
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT rs.option_key, COUNT(*) as c
+            FROM response_selections rs
+            JOIN questions q ON q.id = rs.question_id
+            WHERE q.key = 'features'
+            GROUP BY rs.option_key
+        """)
+        return Counter({ row[0]: row[1] for row in cur.fetchall() })
+    # Fallback to splitting response values
+    features = Counter()
+    for r in responses:
+        feats = r.get('features')
+        if feats:
+            for item in str(feats).split('; '):
+                item = item.strip()
+                if item:
+                    features[item] += 1
+    return features
+
+def aggregate(conn, responses):
     by_experience = Counter()
     glitch_counts = Counter()
     features = Counter()
@@ -84,15 +115,13 @@ def aggregate(responses):
         if s is not None:
             sat_sum += s
             sat_count += 1
-        feats = r.get('features')
-        if feats:
-            for item in str(feats).split('; '):
-                item = item.strip()
-                if item:
-                    features[item] += 1
-        for f in ['painpoint', 'valuable_features', 'trust_ai_reason', 'feature_request', 'monitoring']:
-            if r.get(f):
-                free_text_counts[f] += 1
+        # features counted later from DB (selections) or fallback
+    for f in ['painpoint', 'valuable_features', 'trust_ai_reason', 'feature_request', 'monitoring']:
+        if r.get(f):
+            free_text_counts[f] += 1
+
+    # compute features counts
+    features = features_counts(conn, responses)
 
     summary = {
         'generatedAt': datetime.utcnow().isoformat() + 'Z',
@@ -114,7 +143,7 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     try:
         responses = fetch_responses(conn)
-        summary = aggregate(responses)
+        summary = aggregate(conn, responses)
         ensure_dir(OUT_DIR)
         with open(OUT_SUMMARY, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2)
@@ -126,4 +155,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

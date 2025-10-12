@@ -1,0 +1,1 @@
+﻿# survey_db\n\n- Path: db/survey.sqlite\n- Schema: db/schema_v2.sql\n\nInitialize:\n\n- npm run db:init\n\nConfigure services to use this DB by setting DB_PATH to a relative path from the service (already set in agents/logic/sqlite-service/.env).\n

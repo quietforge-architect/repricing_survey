@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1.25rem; color: #222; }
+    h1 { margin: .2rem 0 1rem; }
+    .row { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; gap:.35rem; min-width:220px; }
+    select, input { padding:.45rem .55rem; border:1px solid #ccc; border-radius:.5rem; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top:1rem; }
+    .card { border:1px solid #ddd; border-radius:.75rem; padding:1rem; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .bar { height: 10px; background:#eef3ff; border-radius: 6px; overflow:hidden; margin: .35rem 0 .8rem; }
+    .bar > span { display:block; height:100%; background:#3578e5; }
+    .muted { color:#666; font-size:.9rem; }
+    .btn { padding:.5rem .8rem; border:1px solid #ccc; border-radius:.5rem; background:#fafafa; cursor:pointer; }
+    .kpi { display:flex; justify-content:space-between; align-items:center; margin:.2rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Survey Dashboard</h1>
+  <div class="row">
+    <div class="field">
+      <label for="experience">Experience</label>
+      <select id="experience">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="model">Model</label>
+      <select id="model" multiple size="4"></select>
+    </div>
+    <div class="field">
+      <label for="from">From</label>
+      <input type="date" id="from" />
+    </div>
+    <div class="field">
+      <label for="to">To</label>
+      <input type="date" id="to" />
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="btn" id="btnLoad">Load JSON Manually</button>
+      <input id="filePicker" type="file" accept="application/json" multiple style="display:none" />
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Totals</h3>
+      <div class="kpi"><span>Total Responses</span><b id="kpiTotal">—</b></div>
+      <div class="kpi"><span>Avg Satisfaction</span><b id="kpiSat">—</b></div>
+      <div class="muted" id="kpiGenerated">—</div>
+    </div>
+    <div class="card">
+      <h3>Experience</h3>
+      <div id="expBars"></div>
+    </div>
+    <div class="card">
+      <h3>Glitches</h3>
+      <div id="glitchBars"></div>
+    </div>
+    <div class="card">
+      <h3>Top Features</h3>
+      <div id="featBars"></div>
+    </div>
+  </div>
+
+  <p class="muted" id="status">Attempting to load ../public/export/survey_summary.json and survey_responses.json ...</p>
+
+  <script>
+    const els = {
+      expSelect: document.getElementById('experience'),
+      modelSelect: document.getElementById('model'),
+      from: document.getElementById('from'),
+      to: document.getElementById('to'),
+      btnLoad: document.getElementById('btnLoad'),
+      filePicker: document.getElementById('filePicker'),
+      kpiTotal: document.getElementById('kpiTotal'),
+      kpiSat: document.getElementById('kpiSat'),
+      kpiGenerated: document.getElementById('kpiGenerated'),
+      expBars: document.getElementById('expBars'),
+      glitchBars: document.getElementById('glitchBars'),
+      featBars: document.getElementById('featBars'),
+      status: document.getElementById('status'),
+    };
+
+    let summary = null;
+    let responses = [];
+
+    function unique(arr) { return Array.from(new Set(arr)); }
+    function parseDateISO(s) { try { return new Date(s); } catch { return null; } }
+
+    function renderBars(container, map) {
+      container.innerHTML = '';
+      const entries = Object.entries(map);
+      if (!entries.length) { container.textContent = '—'; return; }
+      const max = Math.max(1, ...entries.map(([,v]) => v));
+      for (const [k,v] of entries) {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'kpi';
+        row.innerHTML = `<span>${k}</span><b>${v}</b>`;
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const span = document.createElement('span');
+        span.style.width = ((v/max)*100).toFixed(1) + '%';
+        bar.appendChild(span);
+        wrap.appendChild(row);
+        wrap.appendChild(bar);
+        container.appendChild(wrap);
+      }
+    }
+
+    function recomputeAndRender() {
+      const expFilter = els.expSelect.value;
+      const modelSel = Array.from(els.modelSelect.selectedOptions).map(o => o.value);
+      const from = els.from.value ? new Date(els.from.value + 'T00:00:00') : null;
+      const to = els.to.value ? new Date(els.to.value + 'T23:59:59') : null;
+
+      const group = { byExperience: {}, glitchCounts: {}, features: {} };
+      let satSum = 0, satCnt = 0, total = 0;
+      const containsAnyModel = (rec) => {
+        if (!modelSel.length) return true;
+        const m = (rec.model || '').split(/;\s*/).filter(Boolean);
+        return m.some(x => modelSel.includes(x));
+      };
+
+      for (const r of responses) {
+        const ts = r.Timestamp ? parseDateISO(r.Timestamp) : null;
+        if (from && ts && ts < from) continue;
+        if (to && ts && ts > to) continue;
+        if (expFilter && (r.experience || '') !== expFilter) continue;
+        if (!containsAnyModel(r)) continue;
+        total++;
+        const exp = (r.experience || '').trim();
+        if (exp) group.byExperience[exp] = (group.byExperience[exp] || 0) + 1;
+        const g = (r.glitch || '').trim(); if (g) group.glitchCounts[g] = (group.glitchCounts[g] || 0) + 1;
+        const s = Number(r.satisfaction); if (Number.isFinite(s)) { satSum += s; satCnt++; }
+        const feats = (r.features || '').split(/;\s*/).filter(Boolean);
+        for (const f of feats) group.features[f] = (group.features[f] || 0) + 1;
+      }
+
+      els.kpiTotal.textContent = String(total);
+      els.kpiSat.textContent = satCnt ? (satSum / satCnt).toFixed(2) : '—';
+      els.kpiGenerated.textContent = summary?.generatedAt || '';
+      renderBars(els.expBars, group.byExperience);
+      renderBars(els.glitchBars, group.glitchCounts);
+      renderBars(els.featBars, Object.fromEntries(Object.entries(group.features).sort((a,b)=>b[1]-a[1]).slice(0,15)));
+    }
+
+    function populateFilters() {
+      // experiences
+      const exps = unique(responses.map(r => (r.experience || '').trim()).filter(Boolean)).sort();
+      els.expSelect.innerHTML = '<option value="">All</option>' + exps.map(x => `<option>${x}</option>`).join('');
+      // models
+      const models = new Set();
+      for (const r of responses) (r.model || '').split(/;\s*/).filter(Boolean).forEach(m => models.add(m));
+      els.modelSelect.innerHTML = Array.from(models).sort().map(m => `<option>${m}</option>`).join('');
+      // dates
+      const dates = responses.map(r => r.Timestamp).filter(Boolean).map(parseDateISO).filter(d => !isNaN(d));
+      if (dates.length) {
+        const min = new Date(Math.min(...dates)), max = new Date(Math.max(...dates));
+        els.from.value = min.toISOString().slice(0,10);
+        els.to.value = max.toISOString().slice(0,10);
+      }
+    }
+
+    async function tryAutoLoad() {
+      try {
+        const [s, r] = await Promise.all([
+          fetch('../public/export/survey_summary.json', { cache:'no-store' }),
+          fetch('../public/export/survey_responses.json', { cache:'no-store' })
+        ]);
+        if (!s.ok || !r.ok) throw new Error('Fetch failed');
+        summary = await s.json();
+        const rj = await r.json();
+        responses = Array.isArray(rj.items) ? rj.items : [];
+        els.status.textContent = 'Loaded exports from public/export/';
+        populateFilters();
+        recomputeAndRender();
+      } catch (e) {
+        els.status.textContent = 'Auto-load failed. Use "Load JSON Manually" to select summary and responses files.';
+      }
+    }
+
+    els.expSelect.addEventListener('change', recomputeAndRender);
+    els.modelSelect.addEventListener('change', recomputeAndRender);
+    els.from.addEventListener('change', recomputeAndRender);
+    els.to.addEventListener('change', recomputeAndRender);
+    els.btnLoad.addEventListener('click', () => els.filePicker.click());
+    els.filePicker.addEventListener('change', async (ev) => {
+      const files = Array.from(ev.target.files || []);
+      const sum = files.find(f=>/summary\.json$/i.test(f.name));
+      const resp = files.find(f=>/responses\.json$/i.test(f.name)) || files[0];
+      if (!sum || !resp) return;
+      summary = JSON.parse(await sum.text());
+      const rj = JSON.parse(await resp.text());
+      responses = Array.isArray(rj.items) ? rj.items : [];
+      els.status.textContent = 'Loaded selected files.';
+      populateFilters();
+      recomputeAndRender();
+    });
+
+    tryAutoLoad();
+  </script>
+</body>
+</html>
+

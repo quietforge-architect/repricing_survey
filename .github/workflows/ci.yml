@@ -34,3 +34,18 @@ jobs:
       run: |
         npm run validate:exports
 
+    - name: Generate schema from survey
+      run: |
+        npm run schema:generate
+
+    - name: Validate schema/specs
+      run: |
+        node tools/spec_validate.js
+
+    - name: Upload export artifacts (if present)
+      if: ${{ hashFiles('public/export/*.json') != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: survey-export
+        path: public/export/
+

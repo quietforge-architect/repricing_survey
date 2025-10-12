@@ -15,7 +15,10 @@ function doPost(e) {
     returnJson: true,
     required: [], // e.g., ['experience', 'sku_count']
     maxFieldLength: 5000,
-    maxPayloadChars: 524288 // ~512 KB guardrail (characters, not exact bytes)
+    maxPayloadChars: 524288, // ~512 KB guardrail (characters, not exact bytes)
+    // Optional mapping from incoming field names to canonical keys/column names
+    // Example: { 'How_long': 'experience', 'features[]': 'features' }
+    keyMap: {}
   };
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -38,6 +41,8 @@ function doPost(e) {
 
     // Use e.parameters to capture multi-value fields
     var paramMap = normalizeParams_(e.parameters, CONFIG);
+    // Apply canonical key mapping if configured
+    paramMap = mapParamKeys_(paramMap, CONFIG.keyMap);
 
     // Validate required fields
     var missing = CONFIG.required.filter(function (k) { return !(k in paramMap) || String(paramMap[k]).trim() === ''; });
@@ -173,6 +178,26 @@ function normalizeParams_(parameters, CONFIG) {
   return out;
 }
 
+function mapParamKeys_(paramMap, keyMap) {
+  if (!keyMap) return paramMap;
+  var out = {};
+  var keys = Object.keys(paramMap);
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var target = keyMap.hasOwnProperty(k) ? keyMap[k] : k;
+    // Merge arrays when multiple fields map to the same target
+    if (out.hasOwnProperty(target)) {
+      var a = out[target];
+      var b = paramMap[k];
+      if (a && b) out[target] = [a, b].join('; ');
+      else out[target] = a || b || '';
+    } else {
+      out[target] = paramMap[k];
+    }
+  }
+  return out;
+}
+
 function dedupe_(arr) {
   var seen = {};
   var out = [];
@@ -188,4 +213,3 @@ function respond_(CONFIG, code, obj) {
   // ContentService cannot set HTTP status codes for Web Apps; embed code in JSON.
   return ContentService.createTextOutput(text).setMimeType(CONFIG.returnJson ? ContentService.MimeType.JSON : ContentService.MimeType.TEXT);
 }
-
