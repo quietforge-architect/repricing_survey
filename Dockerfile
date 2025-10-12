@@ -1,0 +1,29 @@
+# Dockerfile for the Python API service
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY agents/logic/sqlite_service/ ./agents/logic/sqlite_service/
+COPY db/schema_v2.sql ./db/schema_v2.sql
+COPY tools/ ./tools/
+
+RUN mkdir -p db
+
+EXPOSE 3001
+
+ENV PORT=3001
+# Use gunicorn to run the Flask app in the container. Bind to 0.0.0.0:3001.
+# This is more predictable in production environments than the dev server.
+CMD ["gunicorn", "--bind", "0.0.0.0:3001", "agents.logic.sqlite_service.index:app", "--workers", "2", "--threads", "2"]
+FROM nginx:alpine
+
+RUN apk update && apk upgrade
+
+COPY survey /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
