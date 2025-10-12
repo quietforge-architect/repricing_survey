@@ -28,7 +28,7 @@
   <style>
     body { font-family: system-ui, sans-serif; background:#f9fafb; margin:2em; color:#222; line-height:1.6; }
     form { max-width:820px; margin:auto; background:white; padding:2em; border-radius:1em; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-    h2 { border-bottom:1px solid #ddd; padding-bottom:0.3em; margin-top:2em; }
+    h2 { border-bottom:1px solid #ddd; padding-bottom:0.3em; margin-top:2em; color: #0074d9; }
     label { display:block; margin-top:1.2em; font-weight:600; }
     input, select, textarea { width:100%; margin-top:0.4em; padding:0.6em; border:1px solid #ccc; border-radius:0.4em; font-size:0.95em; }
     textarea { min-height:100px; resize:vertical; }
@@ -36,14 +36,17 @@
     button { margin-top:2em; padding:0.9em 1.5em; border:none; border-radius:0.5em; background:#0074d9; color:white; font-size:1em; cursor:pointer; }
     button:hover { background:#005fa3; }
     .hint { color:#666; font-weight:400; font-size:.92em; }
-  </style>
-</head>
-<body>
+    .page { display: none; }
+    .page.active { display: block; }
+    .navigation { display: flex; justify-content: space-between; align-items: center; margin-top: 2em; }
+    .navigation button { padding: 0.5em 1em; }
+    #progress { font-weight: bold; }
   <!-- Replace ACTION_URL with your Apps Script /exec or local collector URL -->
   <form action="http://localhost:3001/submit" method="POST">
     <h1>Amazon Repricing Feedback Survey</h1>
     <p>Hey fellow seller — appreciate you taking a few minutes. We’re exploring ways to make repricing faster, safer, and a little less soul‑draining. Answers are anonymous unless you choose to leave contact info.</p>
 
+    <div class="page active">
     <h2>About You</h2>
     <label data-category="SellerProfile" data-type="ordinal" data-key="experience">How long have you been selling on Amazon?
       <select name="experience" required>
@@ -78,6 +81,9 @@
       <select name="keepa"><option>No</option><option>Free Plan</option><option>Paid Plan</option></select>
     </label>
 
+    </div>
+
+    <div class="page">
     <h2>Repricing Experience</h2>
     <label data-category="RepricingExperience" data-type="ordinal" data-key="satisfaction">How happy are you with speed & accuracy (1–5)?
       <input type="number" name="satisfaction" min="1" max="5" placeholder="1 = frustrated, 5 = thrilled" />
@@ -109,6 +115,9 @@
       <textarea name="valuable_features" placeholder="Anything that makes life easier or actually works as promised?"></textarea>
     </label>
 
+    </div>
+
+    <div class="page">
     <h2>AI, Data & Trust</h2>
     <label data-category="AI_Trust" data-type="string" data-key="ai_used">Have you tried an AI-powered repricer?
       <select name="ai_used"><option>Yes</option><option>No</option></select>
@@ -127,6 +136,9 @@
       <textarea name="missing_data" placeholder="e.g., Keepa signals, inbound shipments, out-of-stock windows, etc."></textarea>
     </label>
 
+    </div>
+
+    <div class="page">
     <h2>Wishlist & Privacy</h2>
     <label data-category="Wishlist" data-type="text_long" data-key="trust_features">What would make a repricer feel trustworthy?
       <textarea name="trust_features" placeholder="e.g., transparent rules, simulation mode, audit log, rollback features"></textarea>
@@ -157,10 +169,56 @@
       <span class="hint">We don’t publish or sell contact info; it’s used only to reach testers.</span>
     </label>
 
-    <button type="submit">Send My Feedback</button>
+    </div>
+
+    <div class="navigation">
+      <button id="prev" disabled>Previous</button>
+      <span id="progress">1 / 4</span>
+      <button id="next">Next</button>
+    </div>
+
+    <button type="submit" id="submitBtn" style="display:none;">Send My Feedback</button>
   </form>
 
   <script>
+    let currentPage = 0;
+    const pages = document.querySelectorAll('.page');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const progress = document.getElementById('progress');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showPage(pageIndex) {
+      pages.forEach((page, index) => {
+        page.classList.toggle('active', index === pageIndex);
+      });
+      prevBtn.disabled = pageIndex === 0;
+      if (pageIndex === pages.length - 1) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+      } else {
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+      }
+      progress.textContent = `${pageIndex + 1} / ${pages.length}`;
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 0) {
+        currentPage--;
+        showPage(currentPage);
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentPage < pages.length - 1) {
+        currentPage++;
+        showPage(currentPage);
+      }
+    });
+
+    showPage(currentPage);
+
     // Auto-show 'Other' textareas when relevant
     document.querySelectorAll('input[type="checkbox"][value="Other"]').forEach(input => {
       input.addEventListener('change', () => {

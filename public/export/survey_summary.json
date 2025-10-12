@@ -1,35 +1,35 @@
 {
-  "generatedAt": "2025-10-12T17:06:23.495890+00:00",
-  "totalResponses": 53,
+  "generatedAt": "2025-10-12T17:21:35.503522+00:00",
+  "totalResponses": 60,
   "byExperience": {
-    "1\u20133 years": 13,
+    "1\u20133 years": 15,
     "3\u20135 years": 10,
-    "5+ years": 14,
-    "1-3 years": 8,
-    "3-5 years": 8
+    "5+ years": 15,
+    "1-3 years": 10,
+    "3-5 years": 10
   },
-  "avgSatisfaction": 3.06,
+  "avgSatisfaction": 3.12,
   "glitchCounts": {
-    "No": 51,
+    "No": 56,
     "Yes": 1,
-    "Not sure": 1
+    "Not sure": 3
   },
   "topFeatures": [
     {
       "name": "Profit",
-      "count": 13
+      "count": 16
     },
     {
       "name": "Speed",
-      "count": 13
+      "count": 16
     },
     {
       "name": "Reporting",
-      "count": 9
+      "count": 13
     },
     {
       "name": "Custom Rules",
-      "count": 8
+      "count": 10
     }
   ],
   "freeTextCounts": {

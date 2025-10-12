@@ -1,7 +1,7 @@
 # Python / system requirements for development environment
+markitdown
 Flask
 requests
-markitdown
 # None required by Python for this repository currently.
 
 # Node / JS tooling (handled via package.json):

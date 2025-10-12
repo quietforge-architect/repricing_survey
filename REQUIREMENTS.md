@@ -66,6 +66,8 @@ npm start
 
 ## CI notes
 
+- `Dockerfile` provides a reproducible build image that runs the smoke suite and ships the static bundle via nginx.
+- `.github/workflows/pages.yml` deploys the sanitized `dist/` bundle to GitHub Pages while refusing commits that contain contact data in `public/export/`.
 - The included GitHub Actions workflow (see `.github/workflows/ci.yml`) installs Node, runs `npm ci`, and installs Playwright browsers.
 
 ## Security

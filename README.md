@@ -128,6 +128,14 @@ If you want everything inside Google:
 | **Anonymous-friendly** | No login or cookies |
 | **Expandable schema** | Add new fields easily (just add matching column headers) |
 
+## Editing Survey Questions
+
+- Use `schema/survey_questions.yaml` as the canonical question bank. Propose copy or option tweaks there so reviewers can diff changes without touching the live form.
+- Once the YAML looks right, mirror the updates into `survey/index.html` (inputs, placeholders, required flags) and keep the YAML in the same commit.
+- Run `npm run schema:generate` to refresh `schema/survey_schema.json` for automated checks and downstream tooling.
+- Smoke test edits with `npm run preview` for a visual pass and `npm run test:fill-survey` if you need an automated interaction check.
+- Link to the YAML changes in review threads so non-technical collaborators can comment before the survey markup ships.
+
 ---
 
 ## 🧰 Config & Maintenance
@@ -314,3 +322,31 @@ Copyright © 2025
 - `npm run preview` starts a live server at `http://localhost:4173` with automatic reloads for HTML, CSS, JS, and manifest edits. Service worker registration is skipped while previewing locally so changes always appear immediately.
 - `npm run build:offline` rebuilds the production-ready `dist/` directory, including the service worker cache, manifest, and QR splash card.
 - `npm run workflow` opens an interactive menu with shortcuts for the live preview, offline bundle build, and Playwright smoke test. Jump straight in with `npm run workflow -- --mode human` (preview) or `npm run workflow -- --mode agent` (offline build + smoke test).
+
+## Containerized Hosting
+
+To serve the static bundle from a hardened image, build the multi-stage container and run it behind your own ingress or CDN:
+
+```bash
+docker build -t repricing-survey .
+docker run --rm -p 8080:80 -e SURVEY_URL="https://your-domain.example/survey" repricing-survey
+```
+
+The image compiles native dependencies, runs the smoke suite (which generates sanitized exports), and serves the `dist/` bundle with nginx. Override `SURVEY_URL` at build time if you need the offline splash card and manifest to point at your production hostname:
+
+```bash
+docker build --build-arg SURVEY_URL="https://events.example.org/repricing" -t repricing-survey:prod .
+```
+
+## GitHub Pages Deployment (PII-Safe)
+
+A dedicated workflow (`.github/workflows/pages.yml`) builds `dist/` and publishes it to GitHub Pages without bundling any responses. The job intentionally fails if a checked-in file under `public/export/` still contains contact fields or e-mail patterns.
+
+To publish safely:
+
+1. Run `npm run workflow -- --mode agent` locally to refresh sanitized exports and confirm tests pass.
+2. If you ingest new survey data, regenerate public exports with `npm run export:safe:db` (or `npm run export:safe` for CSV input). Only commit the scrubbed JSON files in `public/export/`.
+3. Push to `main`. The `Deploy Pages` workflow installs build prerequisites, runs `npm ci`, calls `npm run build:offline`, and deploys the artifact to the `github-pages` environment. The action sets `SURVEY_URL` to the Pages hostname so your QR card and manifest stay accurate.
+4. Verify the site at the URL printed by the workflow (`https://<owner>.github.io/<repo>/`). If you are using a user/organisation page (`<owner>.github.io`), the workflow automatically falls back to the root domain.
+
+Keep raw submissions (`agents/logic/local-collector/data/submissions.csv`), SQLite snapshots (`db/survey.sqlite`), and any temporary exports out of git; the `.dockerignore` and `.gitignore` entries already prevent accidental commits. Only sanitized aggregates should reach GitHub Pages.
