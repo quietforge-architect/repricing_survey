@@ -22,7 +22,10 @@
                     "db:migrate:v1":  "python agents/logic/sqlite-service/migrate_v1_to_v2.py",
                     "serve:docs":  "node tools/static-serve.js docs 8080",
                     "schema:generate": "node tools/generate-schema-from-html.js",
-                    "export:typed:db": "python tools/export_typed_from_db.py"
+                    "export:typed:db": "python tools/export_typed_from_db.py",
+                    "db:all": "python tools/db_manager.py init && python tools/db_manager.py export_typed && node tools/validate-exports.js && node tools/spec_validate.js",
+                    "db:backup": "python tools/db_manager.py backup",
+                    "validate:specs": "node tools/spec_validate.js"
                 },
     "dependencies":  {
 
