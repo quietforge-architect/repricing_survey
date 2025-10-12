@@ -1,29 +1,29 @@
 {
-  "generatedAt": "2025-10-12T16:34:18.179647+00:00",
-  "totalResponses": 48,
+  "generatedAt": "2025-10-12T17:06:23.598754+00:00",
+  "totalResponses": 53,
   "byExperience": {},
   "avgSatisfaction": 3.06,
   "glitchCounts": {
-    "No": 46,
+    "No": 51,
     "Yes": 1,
     "Not sure": 1
   },
   "topFeatures": [
     {
       "name": "Profit",
-      "count": 10
+      "count": 13
     },
     {
       "name": "Speed",
-      "count": 10
+      "count": 13
     },
     {
       "name": "Reporting",
-      "count": 7
+      "count": 9
     },
     {
       "name": "Custom Rules",
-      "count": 6
+      "count": 8
     }
   ]
 }

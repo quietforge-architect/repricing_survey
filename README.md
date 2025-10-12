@@ -307,3 +307,10 @@ The service exposes:
 MIT License — free to use, modify, and share.  
 Copyright © 2025  
 **Quiet Forge Development Studio**
+---
+
+## Live Preview & Testing Workflow
+
+- `npm run preview` starts a live server at `http://localhost:4173` with automatic reloads for HTML, CSS, JS, and manifest edits. Service worker registration is skipped while previewing locally so changes always appear immediately.
+- `npm run build:offline` rebuilds the production-ready `dist/` directory, including the service worker cache, manifest, and QR splash card.
+- `npm run workflow` opens an interactive menu with shortcuts for the live preview, offline bundle build, and Playwright smoke test. Jump straight in with `npm run workflow -- --mode human` (preview) or `npm run workflow -- --mode agent` (offline build + smoke test).

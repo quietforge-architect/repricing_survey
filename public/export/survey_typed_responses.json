@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-10-12T16:34:18.179647+00:00",
+  "generatedAt": "2025-10-12T17:06:23.598754+00:00",
   "items": [
     {
       "Timestamp": "2025-10-12T00:14:45.004000+00:00",
@@ -1443,6 +1443,176 @@
     },
     {
       "Timestamp": "2025-10-12T16:30:17.737000+00:00",
+      "ai_improvement": "No",
+      "ai_used": "No",
+      "anon_data": "Yes",
+      "contact": "smoke4@example.com",
+      "experience": null,
+      "feature_request": "request 4",
+      "features": [
+        "Profit",
+        "Speed"
+      ],
+      "glitch": "No",
+      "glitch_details": "none",
+      "keepa": "Paid Plan",
+      "local_tool": "Maybe",
+      "missing_data": "missing pieces",
+      "model": [
+        "Retail/Online Arbitrage"
+      ],
+      "model_options": null,
+      "model_other": null,
+      "monitoring": "monitor 4",
+      "painpoint": "pain 4",
+      "privacy": 5,
+      "repricer": "smoke-4",
+      "satisfaction": 5,
+      "sku_count": 504,
+      "style": "Hybrid",
+      "trust_ai": "Maybe",
+      "trust_ai_reason": "reason 4",
+      "trust_features": "audit log",
+      "valuable_features": "valuable 4"
+    },
+    {
+      "Timestamp": "2025-10-12T17:06:23.257000+00:00",
+      "ai_improvement": "No",
+      "ai_used": "No",
+      "anon_data": "Yes",
+      "contact": "smoke0@example.com",
+      "experience": null,
+      "feature_request": "request 0",
+      "features": [
+        "Profit",
+        "Speed"
+      ],
+      "glitch": "No",
+      "glitch_details": "none",
+      "keepa": "Paid Plan",
+      "local_tool": "Maybe",
+      "missing_data": "missing pieces",
+      "model": [
+        "Wholesale"
+      ],
+      "model_options": null,
+      "model_other": null,
+      "monitoring": "monitor 0",
+      "painpoint": "pain 0",
+      "privacy": 1,
+      "repricer": "smoke-0",
+      "satisfaction": 1,
+      "sku_count": 500,
+      "style": "Hybrid",
+      "trust_ai": "Maybe",
+      "trust_ai_reason": "reason 0",
+      "trust_features": "audit log",
+      "valuable_features": "valuable 0"
+    },
+    {
+      "Timestamp": "2025-10-12T17:05:23.259000+00:00",
+      "ai_improvement": "No",
+      "ai_used": "No",
+      "anon_data": "Yes",
+      "contact": "smoke1@example.com",
+      "experience": null,
+      "feature_request": "request 1",
+      "features": [
+        "Custom Rules",
+        "Reporting"
+      ],
+      "glitch": "No",
+      "glitch_details": "none",
+      "keepa": "Paid Plan",
+      "local_tool": "Maybe",
+      "missing_data": "missing pieces",
+      "model": [
+        "Retail/Online Arbitrage"
+      ],
+      "model_options": null,
+      "model_other": null,
+      "monitoring": "monitor 1",
+      "painpoint": "pain 1",
+      "privacy": 2,
+      "repricer": "smoke-1",
+      "satisfaction": 2,
+      "sku_count": 501,
+      "style": "Hybrid",
+      "trust_ai": "Maybe",
+      "trust_ai_reason": "reason 1",
+      "trust_features": "audit log",
+      "valuable_features": "valuable 1"
+    },
+    {
+      "Timestamp": "2025-10-12T17:04:23.259000+00:00",
+      "ai_improvement": "No",
+      "ai_used": "No",
+      "anon_data": "Yes",
+      "contact": "smoke2@example.com",
+      "experience": null,
+      "feature_request": "request 2",
+      "features": [
+        "Profit",
+        "Speed"
+      ],
+      "glitch": "No",
+      "glitch_details": "none",
+      "keepa": "Paid Plan",
+      "local_tool": "Maybe",
+      "missing_data": "missing pieces",
+      "model": [
+        "Bulk"
+      ],
+      "model_options": null,
+      "model_other": null,
+      "monitoring": "monitor 2",
+      "painpoint": "pain 2",
+      "privacy": 3,
+      "repricer": "smoke-2",
+      "satisfaction": 3,
+      "sku_count": 502,
+      "style": "Hybrid",
+      "trust_ai": "Maybe",
+      "trust_ai_reason": "reason 2",
+      "trust_features": "audit log",
+      "valuable_features": "valuable 2"
+    },
+    {
+      "Timestamp": "2025-10-12T17:03:23.259000+00:00",
+      "ai_improvement": "No",
+      "ai_used": "No",
+      "anon_data": "Yes",
+      "contact": "smoke3@example.com",
+      "experience": null,
+      "feature_request": "request 3",
+      "features": [
+        "Custom Rules",
+        "Reporting"
+      ],
+      "glitch": "No",
+      "glitch_details": "none",
+      "keepa": "Paid Plan",
+      "local_tool": "Maybe",
+      "missing_data": "missing pieces",
+      "model": [
+        "Wholesale"
+      ],
+      "model_options": null,
+      "model_other": null,
+      "monitoring": "monitor 3",
+      "painpoint": "pain 3",
+      "privacy": 4,
+      "repricer": "smoke-3",
+      "satisfaction": 4,
+      "sku_count": 503,
+      "style": "Hybrid",
+      "trust_ai": "Maybe",
+      "trust_ai_reason": "reason 3",
+      "trust_features": "audit log",
+      "valuable_features": "valuable 3"
+    },
+    {
+      "Timestamp": "2025-10-12T17:02:23.259000+00:00",
       "ai_improvement": "No",
       "ai_used": "No",
       "anon_data": "Yes",

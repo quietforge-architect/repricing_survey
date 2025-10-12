@@ -1,8 +1,14 @@
 # Python / system requirements for development environment
+Flask
+requests
+markitdown
 # None required by Python for this repository currently.
 
 # Node / JS tooling (handled via package.json):
-# - playwright (devDependency) — installed via npm i -D playwright
+# - express, body-parser, dotenv, better-sqlite3 (runtime deps) -- installed via `npm install`
+# - playwright (devDependency) -- installed via `npm i -D playwright`
+# - qrcode (devDependency) -- installed via `npm i -D qrcode` for QR splash-card generation
+# - lite-server (devDependency) -- installed via `npm i -D lite-server` for live preview with reload
 
 # Notes:
 # - Playwright requires additional browser binaries installed via `npx playwright install`.

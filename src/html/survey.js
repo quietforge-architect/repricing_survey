@@ -49,3 +49,15 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+const isLocalPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+if ('serviceWorker' in navigator && !isLocalPreview) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./service-worker.js')
+      .catch((err) => console.warn('Service worker registration failed:', err));
+  });
+} else if (isLocalPreview) {
+  console.info('Skipping service worker registration for live preview.');
+}

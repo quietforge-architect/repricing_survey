@@ -8,7 +8,7 @@ const { spawn } = require('child_process');
 const projectRoot = path.resolve(__dirname, '..');
 const surveyHtml = path.join(projectRoot, 'survey', 'index.html');
 const collectorServer = path.join(projectRoot, 'agents', 'logic', 'local-collector', 'server.js');
-const collectorPort = process.env.COLLECTOR_PORT || '3000';
+const collectorPort = process.env.COLLECTOR_PORT || '3001';
 const staticPort = process.env.STATIC_PORT || '8081';
 
 function updateFormAction(url) {
@@ -18,13 +18,6 @@ function updateFormAction(url) {
     fs.writeFileSync(surveyHtml, html, 'utf8');
     console.log('[headful] Updated form action to', url);
   }
-}
-
-function startCollector() {
-  const child = spawn(process.execPath, [collectorServer, `--port=${collectorPort}`], { stdio: ['ignore', 'pipe', 'pipe'] });
-  child.stdout.on('data', d => process.stdout.write('[collector] ' + d));
-  child.stderr.on('data', d => process.stderr.write('[collector] ' + d));
-  return child;
 }
 
 function startStaticServer() {
@@ -110,13 +103,11 @@ async function runHeadful() {
 
 async function main() {
   updateFormAction(`http://localhost:${collectorPort}/submit`);
-  const collector = startCollector();
   const staticSrv = startStaticServer();
   await new Promise(r => setTimeout(r, 700));
   try {
     await runHeadful();
   } catch (e) { console.error('[headful] error', e); }
-  collector.kill();
   staticSrv.kill();
 }
 

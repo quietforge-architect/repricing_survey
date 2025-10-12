@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Amazon Repricing Survey</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b3d91">
 </head>
 <body>
+  <aside class="offline-hint">
+    <h1>Quick Start (Works Offline)</h1>
+    <ol>
+      <li>Connect to Wi-Fi once, open this page, and allow it to finish loading.</li>
+      <li>Use your browser menu to select <strong>Add to Home Screen</strong> or <strong>Install App</strong>.</li>
+      <li>Before submitting responses, go back online so the form can sync to the survey endpoint.</li>
+    </ol>
+  </aside>
   <form id="repricing-survey" autocomplete="on" method="POST" action=""> <!-- Apps Script endpoint set via JS -->
     <section>
       <h2>Seller Profile</h2>
