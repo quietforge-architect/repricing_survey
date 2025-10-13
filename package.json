@@ -13,6 +13,7 @@
         "test:fill-survey": "node ./tools/playwright-fill-survey.js",
         "test:fill-survey:headful": "node ./tools/playwright-fill-survey-headful.js",
         "test:stress-survey": "node ./tools/playwright-stress-survey.js",
+        "test:e2e": "playwright test",
         "mcp:notion": "node ./tools/notion-mcp.js",
         "mcp:markitdown": "node ./tools/markitdown-mcp.js",
         "export:safe": "node tools/export-safe-data.js",
@@ -42,6 +43,7 @@
     },
     "devDependencies": {
         "@notionhq/notion-mcp-server": "^1.9.0",
+        "@playwright/test": "^1.56.0",
         "lite-server": "^2.6.1",
         "markitdown": "^0.0.4",
         "playwright": "^1.56.0",

@@ -7,6 +7,8 @@ import re
 import sqlite3
 import time
 from collections import Counter
+import json
+import traceback
 from datetime import datetime
 from flask import Flask, request, jsonify, make_response
 
@@ -138,6 +140,27 @@ def submit():
                 payload[key] = values
             else:
                 payload[key] = values[0]
+    # Lightweight request logging for debugging (mask sensitive tokens)
+    try:
+        def _mask(value):
+            if not value:
+                return ''
+            s = str(value)
+            if len(s) > 8:
+                return s[:4] + '...' + s[-4:]
+            return s
+
+        headers_to_log = {}
+        for k in ('X-Admin-Token', 'X-Submit-Token', 'X-Api-Key', 'Authorization'):
+            v = request.headers.get(k)
+            if v:
+                headers_to_log[k] = _mask(v)
+        # also include a small summary of payload keys (not full values) to avoid noisy logs
+        payload_keys = list(payload.keys()) if isinstance(payload, dict) else []
+        print('[sqlite-service] incoming submit: headers=' + json.dumps(headers_to_log) + ' payload_keys=' + json.dumps(payload_keys))
+    except Exception:
+        print('[sqlite-service] failed to log submit request:')
+        traceback.print_exc()
     if not validate_submit_token(payload):
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     for token_key in ('_submit_token', 'submit_token'):

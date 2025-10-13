@@ -2,7 +2,7 @@ services:
   survey:
     build: .
     ports:
-      - "8080:80"
+      - "3000:80"
     volumes:
       - ./survey:/usr/share/nginx/html
     depends_on:
@@ -13,7 +13,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "3001:3001"
+      - "5000:3001"
     volumes:
       - ./db:/app/db
     environment:

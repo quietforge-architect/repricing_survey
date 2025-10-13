@@ -72,6 +72,7 @@ Run `npm run schema:generate` to refresh derived JSON once you modify the YAML.
 | `npm run preview`                    | Live development server (no service worker caching)                     |
 | `npm run build:offline`              | Production bundle + QR splash card                                      |
 | `npm run test:smoke`                 | Schema check, DB init, sample imports, sanitized export validation      |
+| `npm run test:e2e`                   | Comprehensive Playwright suite (survey UI → API → sqlite summary)       |
 | `npm run test:fill-survey`           | Headless Playwright form submission (local collector)                   |
 | `npm run test:fill-survey:headful`   | Interactive Playwright run (useful for debugging page flow)             |
 | `npx cspell --config cspell.json README.md` | Spot-check spelling using the repo dictionaries                 |
