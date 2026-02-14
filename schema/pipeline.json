@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2025-10-11T00:00:00Z",
+  "stages": [
+    {
+      "name": "collection",
+      "description": "Survey form submission",
+      "inputs": ["survey/index.html", "Apps Script Web App"],
+      "outputs": ["Google Sheet Responses", "db/survey.sqlite"]
+    },
+    {
+      "name": "ingestion",
+      "description": "Normalize submissions into v2 schema",
+      "tool": "agents/logic/sqlite-service/index.js",
+      "outputs": ["responses", "response_values", "response_selections"]
+    },
+    {
+      "name": "enrichment",
+      "description": "Load item attributes",
+      "tool": "agents/logic/load_items.py",
+      "outputs": ["items", "item_metrics"]
+    },
+    {
+      "name": "exports",
+      "description": "Generate safe and typed JSON",
+      "tools": [
+        "tools/export_safe_from_db.py",
+        "tools/export_typed_from_db.py"
+      ],
+      "outputs": [
+        "public/export/survey_summary.json",
+        "public/export/survey_responses.json",
+        "public/export/survey_typed_summary.json",
+        "public/export/survey_typed_responses.json"
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2025-10-11T23:37:33.401Z",
+  "tasks": [
+    {
+      "file": "agents/tasks/apps_script_auto_headers.md",
+      "title": "Auto-Create Missing Headers in Apps Script",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_collector_advanced.md",
+      "title": "Apps Script Collector (Advanced: Auto-Headers + Error Handling)",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_collector_basic.md",
+      "title": "Google Sheets Apps Script Collector (Basic)",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_collector_meta.md",
+      "title": "Apps Script Collector (Meta-Tagged Fields)",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_config_and_logging.md",
+      "title": "Apps Script Config Section + Logging Tab",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_endpoint_hardening.md",
+      "title": "Harden Apps Script `/exec` Endpoint",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_host_form_html.md",
+      "title": "Host Form HTML in Apps Script",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/apps_script_polished_with_logging.md",
+      "title": "Polished Apps Script Collector (Auto-Headers, Errors, Logs)",
+      "category": "apps-script",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/ci_workflow_integration_docs_setup_script.md",
+      "title": "CI Workflow + Integration Doc + Setup Script",
+      "category": "docs",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/dashboard_integration.md",
+      "title": "Dashboard Integration (Aggregated Metrics)",
+      "category": "dashboard",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/db_files_and_sync_handler_patches.md",
+      "title": "DB Layer Files + sync_handler Patches",
+      "category": "db",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/db_manager_update_and_makefile.md",
+      "title": "db_manager.py Update + Makefile Snippet",
+      "category": "db",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/docs_contributing_and_manifest.md",
+      "title": "CONTRIBUTING.md + project.json Manifest",
+      "category": "docs",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/docs_integration_map_blueprint.md",
+      "title": "Integration Map Blueprint (Mermaid Diagram)",
+      "category": "docs",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/docs_readme_troubleshooting.md",
+      "title": "README Quick Troubleshooting Section",
+      "category": "docs",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/generate_docs_and_task_manifest.md",
+      "title": "Generate /docs And agents/tasks/task_manifest.json",
+      "category": "docs",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/generate_protocol_files.md",
+      "title": "Generate Protocol Files (JSON/YAML/Logic)",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/item_attributes_schema_loader_reference.md",
+      "title": "Item Attributes Schema + Loader + Reference Doc",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/json_exporter_from_meta_tags.md",
+      "title": "JSON Exporter From Meta-Tagged Form Data",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/local_csv_writer_backend.md",
+      "title": "Local CSV Writer Backend (No External Services)",
+      "category": "local-backend",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/migration_script_and_schema_v2.md",
+      "title": "Migration Script + Schema v2 (Normalized)",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/production_hardening_checklist.md",
+      "title": "Production Hardening Checklist",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/project_scaffold_tree_and_files.md",
+      "title": "Project Scaffold (Folder Tree + Base Files)",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/results_html_and_export_script.md",
+      "title": "Results HTML + Updated Export Script",
+      "category": "general",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    },
+    {
+      "file": "agents/tasks/safe_public_pipeline_or_privacy_docs.md",
+      "title": "Safe-Public Pipeline vs Privacy Documentation",
+      "category": "docs",
+      "updatedAt": "2025-10-11T23:37:33.401Z"
+    }
+  ]
+}

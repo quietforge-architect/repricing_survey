@@ -1,0 +1,78 @@
+name: Deploy Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/html/**'
+      - 'tools/build-offline-survey.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'bs-config.js'
+      - '.github/workflows/pages.yml'
+      - 'Dockerfile'
+      - 'README.md'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 build-essential libsqlite3-dev
+          sudo ln -sf /usr/bin/python3 /usr/bin/python
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify public exports sanitised
+        if: ${{ hashFiles('public/export/*.json') != '' }}
+        run: |
+          if grep -R --text -n '"contact"' public/export; then
+            echo "Found contact field in public/export. Ensure safe exports before pushing."
+            exit 1
+          fi
+          if grep -R --text -n '@' public/export; then
+            echo "Found email-like data in public/export. Ensure safe exports before pushing."
+            exit 1
+          fi
+
+      - name: Build offline bundle
+        env:
+          SURVEY_URL: ${{ github.repository.name == format('{0}.github.io', github.repository.owner) && format('https://{0}/', github.repository.name) || format('https://{0}.github.io/{1}/', github.repository.owner, github.repository.name) }}
+        run: npm run build:offline
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - id: deploy
+        uses: actions/deploy-pages@v4

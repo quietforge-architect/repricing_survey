@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Survey Dashboard</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1.25rem; color: #222; }
+    h1 { margin: .2rem 0 1rem; }
+    .row { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; gap:.35rem; min-width:220px; }
+    select, input { padding:.45rem .55rem; border:1px solid #ccc; border-radius:.5rem; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top:1rem; }
+    .card { border:1px solid #ddd; border-radius:.75rem; padding:1rem; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+    .bar { height: 10px; background:#eef3ff; border-radius: 6px; overflow:hidden; margin: .35rem 0 .8rem; }
+    .bar > span { display:block; height:100%; background:#3578e5; }
+    .muted { color:#666; font-size:.9rem; }
+    .btn { padding:.5rem .8rem; border:1px solid #ccc; border-radius:.5rem; background:#fafafa; cursor:pointer; }
+    .kpi { display:flex; justify-content:space-between; align-items:center; margin:.2rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Survey Dashboard</h1>
+  <div class="row">
+    <div class="field">
+      <label for="years">Years Selling</label>
+      <select id="years">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="commitment">Selling Commitment</label>
+      <select id="commitment">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="from">From</label>
+      <input type="date" id="from" />
+    </div>
+    <div class="field">
+      <label for="to">To</label>
+      <input type="date" id="to" />
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="btn" id="btnLoad">Load JSON Manually</button>
+      <input id="filePicker" type="file" accept="application/json" multiple style="display:none" />
+      <button class="btn" id="btnDownload" style="margin-top:.4rem">Download CSV</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Totals</h3>
+      <div class="kpi"><span>Total Responses</span><b id="kpiTotal">—</b></div>
+      <div class="kpi"><span>Avg Weekly Hours</span><b id="kpiWeekly">—</b></div>
+      <div class="kpi"><span>Avg Privacy Rating</span><b id="kpiPrivacy">—</b></div>
+      <div class="kpi"><span>Avg Inventory Anxiety</span><b id="kpiAnxiety">—</b></div>
+      <div class="muted" id="kpiGenerated">—</div>
+    </div>
+    <div class="card">
+      <h3>Years Selling</h3>
+      <div id="yearsBars"></div>
+    </div>
+    <div class="card">
+      <h3>Selling Commitment</h3>
+      <div id="commitmentBars"></div>
+    </div>
+    <div class="card">
+      <h3>Risk Posture</h3>
+      <div id="riskBars"></div>
+    </div>
+    <div class="card">
+      <h3>Signal Menu (Top)</h3>
+      <div id="signalBars"></div>
+    </div>
+    <div class="card">
+      <h3>Sourcing Style (Top)</h3>
+      <div id="sourcingBars"></div>
+    </div>
+    <div class="card">
+      <h3>Safety Nets (Top)</h3>
+      <div id="safetyBars"></div>
+    </div>
+    <div class="card">
+      <h3>Learning Sources (Top)</h3>
+      <div id="learningBars"></div>
+    </div>
+  </div>
+
+  <p class="muted" id="status">Attempting to load ../public/export/survey_summary.json and survey_responses.json ...</p>
+
+  <script>
+    const els = {
+      yearsSelect: document.getElementById('years'),
+      commitmentSelect: document.getElementById('commitment'),
+      from: document.getElementById('from'),
+      to: document.getElementById('to'),
+      btnLoad: document.getElementById('btnLoad'),
+      filePicker: document.getElementById('filePicker'),
+      btnDownload: document.getElementById('btnDownload'),
+      kpiTotal: document.getElementById('kpiTotal'),
+      kpiWeekly: document.getElementById('kpiWeekly'),
+      kpiPrivacy: document.getElementById('kpiPrivacy'),
+      kpiAnxiety: document.getElementById('kpiAnxiety'),
+      kpiGenerated: document.getElementById('kpiGenerated'),
+      yearsBars: document.getElementById('yearsBars'),
+      commitmentBars: document.getElementById('commitmentBars'),
+      riskBars: document.getElementById('riskBars'),
+      signalBars: document.getElementById('signalBars'),
+      sourcingBars: document.getElementById('sourcingBars'),
+      safetyBars: document.getElementById('safetyBars'),
+      learningBars: document.getElementById('learningBars'),
+      status: document.getElementById('status'),
+    };
+
+    const MULTI_KEYS = ['signal_menu', 'sourcing_style', 'safety_nets', 'learning_sources'];
+    let summary = null;
+    let responses = [];
+
+    function parseISODate(s) {
+      if (!s) return null;
+      const date = new Date(s);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function parseMulti(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      return String(raw)
+        .split(/;\s*/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
+    function filteredResponses() {
+      const yearFilter = els.yearsSelect.value;
+      const commitmentFilter = els.commitmentSelect.value;
+      const fromDate = els.from.value ? new Date(`${els.from.value}T00:00:00`) : null;
+      const toDate = els.to.value ? new Date(`${els.to.value}T23:59:59`) : null;
+      return responses.filter((rec) => {
+        const ts = parseISODate(rec.Timestamp);
+        if (fromDate && ts && ts < fromDate) return false;
+        if (toDate && ts && ts > toDate) return false;
+        if (yearFilter && (rec.years_selling || '') !== yearFilter) return false;
+        if (commitmentFilter && (rec.selling_commitment || '') !== commitmentFilter) return false;
+        return true;
+      });
+    }
+
+    function renderBars(container, map) {
+      container.innerHTML = '';
+      const entries = Object.entries(map || {});
+      if (!entries.length) {
+        container.textContent = '—';
+        return;
+      }
+      const max = Math.max(1, ...entries.map(([, value]) => value));
+      for (const [label, value] of entries.sort((a, b) => b[1] - a[1])) {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<span>${label}</span><b>${value}</b>`;
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const span = document.createElement('span');
+        span.style.width = `${((value / max) * 100).toFixed(1)}%`;
+        bar.appendChild(span);
+        wrap.appendChild(row);
+        wrap.appendChild(bar);
+        container.appendChild(wrap);
+      }
+    }
+
+    function renderTop(container, counter) {
+      const map = Object.fromEntries(
+        [...counter.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 15)
+      );
+      renderBars(container, map);
+    }
+
+    function recomputeAndRender() {
+      const data = filteredResponses();
+      const totals = {
+        count: data.length,
+        weekly: { sum: 0, n: 0 },
+        privacy: { sum: 0, n: 0 },
+        anxiety: { sum: 0, n: 0 },
+      };
+      const counts = {
+        years_selling: {},
+        selling_commitment: {},
+        risk_posture: {},
+      };
+      const multiCounters = new Map(MULTI_KEYS.map((key) => [key, new Map()]));
+
+      for (const rec of data) {
+        const year = (rec.years_selling || '').trim();
+        if (year) counts.years_selling[year] = (counts.years_selling[year] || 0) + 1;
+
+        const commitment = (rec.selling_commitment || '').trim();
+        if (commitment) counts.selling_commitment[commitment] = (counts.selling_commitment[commitment] || 0) + 1;
+
+        const risk = (rec.risk_posture || '').trim();
+        if (risk) counts.risk_posture[risk] = (counts.risk_posture[risk] || 0) + 1;
+
+        const weekly = Number(rec.weekly_hours);
+        if (Number.isFinite(weekly)) { totals.weekly.sum += weekly; totals.weekly.n += 1; }
+
+        const privacy = Number(rec.privacy_rating);
+        if (Number.isFinite(privacy)) { totals.privacy.sum += privacy; totals.privacy.n += 1; }
+
+        const anxiety = Number(rec.inventory_anxiety);
+        if (Number.isFinite(anxiety)) { totals.anxiety.sum += anxiety; totals.anxiety.n += 1; }
+
+        for (const key of MULTI_KEYS) {
+          const counter = multiCounters.get(key);
+          for (const item of parseMulti(rec[key])) {
+            counter.set(item, (counter.get(item) || 0) + 1);
+          }
+        }
+      }
+
+      els.kpiTotal.textContent = String(totals.count);
+      els.kpiWeekly.textContent = totals.weekly.n ? (totals.weekly.sum / totals.weekly.n).toFixed(2) : '—';
+      els.kpiPrivacy.textContent = totals.privacy.n ? (totals.privacy.sum / totals.privacy.n).toFixed(2) : '—';
+      els.kpiAnxiety.textContent = totals.anxiety.n ? (totals.anxiety.sum / totals.anxiety.n).toFixed(2) : '—';
+      els.kpiGenerated.textContent = summary?.generatedAt || '';
+
+      renderBars(els.yearsBars, counts.years_selling);
+      renderBars(els.commitmentBars, counts.selling_commitment);
+      renderBars(els.riskBars, counts.risk_posture);
+      renderTop(els.signalBars, multiCounters.get('signal_menu'));
+      renderTop(els.sourcingBars, multiCounters.get('sourcing_style'));
+      renderTop(els.safetyBars, multiCounters.get('safety_nets'));
+      renderTop(els.learningBars, multiCounters.get('learning_sources'));
+    }
+
+    function uniqueSorted(values) {
+      return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    }
+
+    function populateFilters() {
+      const years = uniqueSorted(responses.map((r) => (r.years_selling || '').trim()));
+      els.yearsSelect.innerHTML = '<option value="">All</option>' + years.map((y) => `<option>${y}</option>`).join('');
+
+      const commitments = uniqueSorted(responses.map((r) => (r.selling_commitment || '').trim()));
+      els.commitmentSelect.innerHTML = '<option value="">All</option>' + commitments.map((c) => `<option>${c}</option>`).join('');
+
+      const dates = responses
+        .map((r) => parseISODate(r.Timestamp))
+        .filter((d) => d);
+      if (dates.length) {
+        const min = new Date(Math.min(...dates));
+        const max = new Date(Math.max(...dates));
+        els.from.value = min.toISOString().slice(0, 10);
+        els.to.value = max.toISOString().slice(0, 10);
+      }
+    }
+
+    async function tryAutoLoad() {
+      try {
+        const [s, r] = await Promise.all([
+          fetch('../public/export/survey_summary.json', { cache: 'no-store' }),
+          fetch('../public/export/survey_responses.json', { cache: 'no-store' }),
+        ]);
+        if (!s.ok || !r.ok) throw new Error('Fetch failed');
+        summary = await s.json();
+        const respJson = await r.json();
+        responses = Array.isArray(respJson.items) ? respJson.items : [];
+        els.status.textContent = 'Loaded exports from public/export/.';
+        populateFilters();
+        recomputeAndRender();
+      } catch (err) {
+        els.status.textContent = 'Auto-load failed. Use "Load JSON Manually" to select summary and responses files.';
+      }
+    }
+
+    els.yearsSelect.addEventListener('change', recomputeAndRender);
+    els.commitmentSelect.addEventListener('change', recomputeAndRender);
+    els.from.addEventListener('change', recomputeAndRender);
+    els.to.addEventListener('change', recomputeAndRender);
+    els.btnLoad.addEventListener('click', () => els.filePicker.click());
+    els.filePicker.addEventListener('change', async (ev) => {
+      const files = Array.from(ev.target.files || []);
+      const summaryFile = files.find((f) => /summary\.json$/i.test(f.name));
+      const responsesFile = files.find((f) => /responses\.json$/i.test(f.name)) || files[0];
+      if (!summaryFile || !responsesFile) return;
+      try {
+        summary = JSON.parse(await summaryFile.text());
+        const respJson = JSON.parse(await responsesFile.text());
+        responses = Array.isArray(respJson.items) ? respJson.items : [];
+        els.status.textContent = 'Loaded selected files.';
+        populateFilters();
+        recomputeAndRender();
+      } catch (err) {
+        console.error('Failed loading selected files:', err);
+        els.status.textContent = 'Could not parse selected JSON files.';
+      }
+    });
+
+    function downloadCSV() {
+      const data = filteredResponses();
+      if (!data.length) { alert('No rows match current filters.'); return; }
+      const keys = Array.from(new Set(data.flatMap((obj) => Object.keys(obj))));
+      const rows = [keys.join(',')];
+      for (const row of data) {
+        rows.push(
+          keys
+            .map((key) => {
+              const val = row[key];
+              if (val == null) return '';
+              const str = Array.isArray(val) ? val.join('; ') : String(val);
+              return `"${str.replace(/"/g, '""')}"`
+            })
+            .join(',')
+        );
+      }
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'survey_filtered.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    els.btnDownload.addEventListener('click', downloadCSV);
+
+    tryAutoLoad();
+  </script>
+</body>
+</html>

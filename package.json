@@ -1,0 +1,52 @@
+{
+    "name": "amazon-repricing-survey",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "agent:survey-sync": "node agents/logic/survey_sync.js",
+        "agent:html-audit": "node agents/logic/html_audit.js",
+        "sqlite-service:start": "node agents/logic/sqlite-service/index.js",
+        "sqlite-service:init": "node agents/logic/sqlite-service/init-db.js",
+        "tools:versions": "node -v && npm -v && npx --version || true",
+        "install-playwright-browsers": "npx playwright install",
+        "mcp:playwright": "node ./tools/playwright-mcp.js",
+        "test:fill-survey": "node ./tools/playwright-fill-survey.js",
+        "test:fill-survey:headful": "node ./tools/playwright-fill-survey-headful.js",
+        "test:stress-survey": "node ./tools/playwright-stress-survey.js",
+        "test:e2e": "playwright test",
+        "mcp:notion": "node ./tools/notion-mcp.js",
+        "mcp:markitdown": "node ./tools/markitdown-mcp.js",
+        "export:safe": "node tools/export-safe-data.js",
+        "collector:start": "node agents/logic/local-collector/server.js",
+        "validate:exports": "node tools/validate-exports.js",
+        "export:safe:db": "python tools/export_safe_from_db.py",
+        "survey:set-action": "node tools/set-form-action.js",
+        "post:sample": "node tools/post-sample.js",
+        "db:init": "python tools/init_survey_db.py",
+        "db:migrate:v1": "python agents/logic/sqlite-service/migrate_v1_to_v2.py",
+        "serve:docs": "node tools/static-serve.js docs 8080",
+        "schema:generate": "node tools/generate-schema-from-html.js",
+        "export:typed:db": "python tools/export_typed_from_db.py",
+        "db:all": "python tools/db_manager.py init && python tools/db_manager.py export_typed && node tools/validate-exports.js && node tools/spec_validate.js",
+        "db:backup": "python tools/db_manager.py backup",
+        "validate:specs": "node tools/spec_validate.js",
+        "test:smoke": "node tools/smoke-test.js",
+        "build:offline": "node tools/build-offline-survey.js",
+        "preview": "lite-server --config bs-config.js",
+        "workflow": "node tools/workflow-entry.js"
+    },
+    "dependencies": {
+        "better-sqlite3": "^9.5.0",
+        "body-parser": "^1.20.3",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2"
+    },
+    "devDependencies": {
+        "@notionhq/notion-mcp-server": "^1.9.0",
+        "@playwright/test": "^1.56.0",
+        "lite-server": "^2.6.1",
+        "markitdown": "^0.0.4",
+        "playwright": "^1.56.0",
+        "qrcode": "^1.5.4"
+    }
+}

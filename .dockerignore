@@ -1,0 +1,11 @@
+.git
+.github
+.vscode
+.venv
+node_modules
+dist
+coverage
+tmp*
+*.log
+agents/logic/local-collector/data
+db/survey.sqlite

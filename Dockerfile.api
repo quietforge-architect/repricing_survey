@@ -1,0 +1,24 @@
+# Dockerfile for the Python API service
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY agents/logic/sqlite_service/ ./agents/logic/sqlite_service/
+COPY db/schema_v2.sql ./db/schema_v2.sql
+COPY tools/ ./tools/
+
+RUN mkdir -p db
+EXPOSE 3001
+
+# allow the runtime to override PORT; default to 3001 for local testing
+ENV PORT=3001
+
+# copy a small entrypoint script that will ensure the DB directory exists,
+# optionally initialize schema if provided, and then exec gunicorn binding to $PORT
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+CMD ["sh", "-c", "/usr/local/bin/docker-entrypoint.sh"]

@@ -1,0 +1,51 @@
+﻿name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install dependencies
+      run: |
+        npm ci
+
+    - name: Install Playwright browsers
+      run: |
+        npx playwright install --with-deps
+
+    - name: Run lint/tests (no tests yet)
+      run: |
+        npm run tools:versions || true
+
+    - name: Validate exported JSON (if present)
+      run: |
+        npm run validate:exports
+
+    - name: Generate schema from survey
+      run: |
+        npm run schema:generate
+
+    - name: Validate schema/specs
+      run: |
+        node tools/spec_validate.js
+
+    - name: Upload export artifacts (if present)
+      if: ${{ hashFiles('public/export/*.json') != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: survey-export
+        path: public/export/
+

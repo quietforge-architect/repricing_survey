@@ -1,0 +1,95 @@
+﻿#!/usr/bin/env node
+// Orchestrates an end-to-end smoke test of the survey pipeline
+
+const { spawn, spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const ROOT = path.join(__dirname, '..');
+const DB_PATH = path.join(ROOT, 'db', 'survey.sqlite');
+const EXPORT_DIR = path.join(ROOT, 'public', 'export');
+const PORT = process.env.SMOKE_PORT || '3101';
+
+function run(cmd, args, opts = {}) {
+  const result = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
+  if (result.status !== 0) {
+    throw new Error(`${cmd} ${args.join(' ')} failed with code ${result.status}`);
+  }
+}
+
+async function waitForHealth(url, timeoutMs = 10000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) return;
+    } catch (_) { /* retry */ }
+    await new Promise(r => setTimeout(r, 250));
+  }
+  throw new Error('Service health check timed out');
+}
+
+function ensureFileExists(p) {
+  if (!fs.existsSync(p)) throw new Error(`Expected file missing: ${p}`);
+}
+
+async function main() {
+  console.log('--- Smoke Test: schema generation ---');
+  run('node', [path.join('tools', 'generate-schema-from-html.js')], { cwd: ROOT });
+
+  console.log('--- Smoke Test: DB init ---');
+  run('python', [path.join('tools', 'init_survey_db.py')], { cwd: ROOT });
+
+  console.log('--- Smoke Test: load sample items ---');
+  const tmpCsv = path.join(os.tmpdir(), `items-smoke-${Date.now()}.csv`);
+  fs.writeFileSync(tmpCsv, 'SKU,ASIN,Title,Condition,Fulfillment,Rank,Price\nSKU123,ASIN123,Sample Item 1,New,FBA,12345,19.99\nSKU456,ASIN456,Sample Item 2,Used,FBM,54321,9.49\n');
+  run('python', [path.join('agents', 'logic', 'load_items.py'), tmpCsv], { cwd: ROOT });
+
+  console.log('--- Smoke Test: start sqlite-service ---');
+  const env = { ...process.env, PORT, DB_PATH };
+  const server = spawn('node', [path.join('agents', 'logic', 'sqlite-service', 'index.js')], {
+    cwd: ROOT,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+  server.stdout.on('data', data => process.stdout.write('[service] ' + data));
+  server.stderr.on('data', data => process.stderr.write('[service] ' + data));
+
+  try {
+    await waitForHealth(`http://localhost:${PORT}/api/health`);
+    console.log('Service healthy');
+
+    console.log('--- Smoke Test: post sample submissions ---');
+    run('node', [path.join('tools', 'post-to-sqlite-stress.js')], {
+      cwd: ROOT,
+      env: { ...env, TARGET_PORT: PORT, N: '5', CONC: '2' }
+    });
+  } finally {
+    server.kill();
+    await new Promise(resolve => server.on('exit', resolve));
+  }
+
+  console.log('--- Smoke Test: exports ---');
+  run('python', [path.join('tools', 'export_safe_from_db.py')], { cwd: ROOT });
+  run('python', [path.join('tools', 'export_typed_from_db.py')], { cwd: ROOT });
+
+  console.log('--- Smoke Test: validations ---');
+  run('node', [path.join('tools', 'validate-exports.js')], { cwd: ROOT });
+  run('node', [path.join('tools', 'spec_validate.js')], { cwd: ROOT });
+
+  console.log('--- Smoke Test: artifact checks ---');
+  ensureFileExists(path.join(EXPORT_DIR, 'survey_summary.json'));
+  ensureFileExists(path.join(EXPORT_DIR, 'survey_responses.json'));
+  ensureFileExists(path.join(EXPORT_DIR, 'survey_typed_summary.json'));
+  ensureFileExists(path.join(EXPORT_DIR, 'survey_typed_responses.json'));
+
+  console.log('Smoke test completed successfully.');
+}
+
+main().catch(err => {
+  console.error('Smoke test failed:', err.message);
+  process.exitCode = 1;
+});
+
+

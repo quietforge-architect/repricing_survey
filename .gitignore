@@ -1,0 +1,13 @@
+# Node and build
+node_modules/
+dist/
+# OS
+.DS_Store
+Thumbs.db
+# Logs and agent cache
+agents/logs/
+*.log
+# Env and credentials
+.env
+.env.local
+.venv/

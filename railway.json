@@ -1,0 +1,10 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt"
+  },
+  "deploy": {
+  "startCommand": "gunicorn --log-level debug --access-logfile - --capture-output --bind 0.0.0.0:$PORT agents.logic.sqlite_service.index:app",
+    "healthcheckPath": "/api/health"
+  }
+}

@@ -1,0 +1,25 @@
+services:
+  survey:
+    build: .
+    ports:
+      - "3000:80"
+    volumes:
+      - ./survey:/usr/share/nginx/html
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5000:3001"
+    volumes:
+      - ./db:/app/db
+    environment:
+      - DB_PATH=/app/db/survey.sqlite
+      - API_ADMIN_TOKEN=${API_ADMIN_TOKEN:-}
+      - API_SUBMIT_TOKEN=${API_SUBMIT_TOKEN:-}
+
+volumes:
+  db_data:

@@ -1,0 +1,10 @@
+providers = ["python"]
+
+[phases.setup]
+nixPkgs = ["python312"]
+
+[phases.build]
+cmds = ["python -m pip install --upgrade pip", "python -m pip install -r requirements.txt"]
+
+[start]
+cmd = "gunicorn --bind 0.0.0.0:$PORT agents.logic.sqlite_service.index:app"

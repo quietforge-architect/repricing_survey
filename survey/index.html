@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amazon Repricing Feedback Survey</title>
+    <meta
+      name="description"
+      content="A 20-question humor-forward survey for indie and full-time Amazon booksellers exploring repricing gaps."
+    />
+    <meta name="schema_version" content="v2.0.0" />
+    <meta name="form_name" content="Amazon_Repricing_Feedback_Survey" />
+    <meta name="author" content="Quiet Forge Development Studio" />
+    <meta name="data_categories" content="SellerProfile,Workflow,RiskInsights,Wishlist,Privacy,Participation" />
+    <!-- <meta name="theme-color" content="#1d4ed8" /> -->
+    <!-- Removed invalid msapplication-navbutton-color meta tag -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="msapplication-TileColor" content="#1d4ed8" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.quietforge.dev/surveys",
+        "@type": "SurveySchema",
+        "version": "2.0.0",
+        "sections": {
+          "SellerProfile": ["years_selling","selling_commitment","weekly_hours","sourcing_style","non_book_inventory"],
+          "Workflow": ["listing_rhythm","repricing_stack","price_check_frequency","signal_menu","inventory_anxiety"],
+          "RiskInsights": ["risk_posture","memorable_glitch","safety_nets","experiment_cadence","learning_sources"],
+          "Wishlist": ["wishlist_feature"],
+          "Privacy": ["ai_trust_temperature","privacy_rating"],
+          "Participation": ["community_interest","contact"]
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <form id="surveyForm" data-action="http://localhost:3001/submit" novalidate>
+      <h1>Amazon Repricing Feedback Survey</h1>
+      <p class="intro">
+        Hey fellow seller, thanks for lending your brain for a few minutes. We are studying how repricing actually feels
+        for indie and full-time book folks. Expect dry humor, zero robo-sales vibes, and a better repricer at the end of
+        the rainbow.
+      </p>
+
+      <div class="page active" data-page="0">
+        <h2>Shelf Life &amp; Seller Lore</h2>
+
+        <label data-category="SellerProfile" data-key="years_selling">
+          How long have you been slinging stories on Amazon?
+          <select name="years_selling" required>
+            <option value="" disabled selected>Pick the era that fits</option>
+            <option value="Still cracking the first spine (0-12 months)">Still cracking the first spine (0-12 months)</option>
+            <option value="" disabled selected hidden>Pick the era that fits</option>
+            <option value="Still cracking the first spine (0-12 months)">Still cracking the first spine (0-12 months)</option>
+            <option value="Encyclopedia energy (5+ years)">Encyclopedia energy (5+ years)</option>
+          </select>
+        </label>
+
+        <label data-category="SellerProfile" data-key="selling_commitment">
+          Is bookselling a side quest or your main saga?
+          <select name="selling_commitment" required>
+            <option value="" disabled selected>Choose the vibe</option>
+            <option value="Part-time for fun (or funding more books)">Part-time for fun (or funding more books)</option>
+            <option value="" disabled selected hidden>Choose the vibe</option>
+            <option value="Part-time for fun (or funding more books)">Part-time for fun (or funding more books)</option>
+            <option value="Other mix of chaos">Other mix of chaos</option>
+          </select>
+        </label>
+
+        <label data-category="SellerProfile" data-key="weekly_hours">
+          How many hours a week do you wrestle listings, boxes, and repricing dashboards?
+          <input
+            type="number"
+            name="weekly_hours"
+            min="0"
+            max="120"
+            inputmode="numeric"
+            placeholder="e.g., 28"
+          />
+          <span class="hint">Rough estimate is perfect. We are not your time-tracking app.</span>
+        </label>
+
+        <fieldset class="checkbox-group" data-category="SellerProfile" data-key="sourcing_style">
+          <legend>What sourcing moves fill your cart (pick all that feel true)?</legend>
+          <label><input type="checkbox" name="sourcing_style" value="Library sale lightning raids" />Library sale lightning raids</label>
+          <label><input type="checkbox" name="sourcing_style" value="Estate sale archeology" />Estate sale archeology</label>
+          <label><input type="checkbox" name="sourcing_style" value="Bulk pallets and mystery Gaylords" />Bulk pallets and mystery Gaylords</label>
+          <label><input type="checkbox" name="sourcing_style" value="Retail scouting with scanner in hand" />Retail scouting with scanner in hand</label>
+          <label><input type="checkbox" name="sourcing_style" value="Consignment or community partnerships" />Consignment or community partnerships</label>
+          <label><input type="checkbox" name="sourcing_style" value="Online arbitrage rabbit holes" />Online arbitrage rabbit holes</label>
+          <label><input type="checkbox" name="sourcing_style" value="Other secret chapter" />Other secret chapter</label>
+        </fieldset>
+
+        <label data-category="SellerProfile" data-key="non_book_inventory">
+          Anything besides books sneaking onto your shelves?
+          <input
+            type="text"
+            name="non_book_inventory"
+            placeholder="Optional: board games, vinyl, obscure garden gnomes..."
+          />
+        </label>
+      </div>
+
+      <div class="page" data-page="1">
+        <h2>Daily Rituals &amp; Tooling</h2>
+
+        <label data-category="Workflow" data-key="listing_rhythm">
+          How do you batch your listing and repricing sessions?
+          <select name="listing_rhythm" required>
+            <option value="" disabled selected>Pick the closest cadence</option>
+            <option value="Daily micro-sprints with a mug of something warm">Daily micro-sprints with a mug of something warm</option>
+            <option value="Big weekly batch while the world sleeps">Big weekly batch while the world sleeps</option>
+            <option value="Weekend warrior marathons">Weekend warrior marathons</option>
+            <option value="Chaotic whenever-I-can bursts">Chaotic whenever-I-can bursts</option>
+          </select>
+        </label>
+
+        <label data-category="Workflow" data-key="repricing_stack">
+          Name the tools, scripts, or lucky charms in your repricing stack.
+          <textarea
+            name="repricing_stack"
+            placeholder="Feel free to brag about homebrew magic or off-the-shelf favorites."
+          ></textarea>
+        </label>
+
+        <label data-category="Workflow" data-key="price_check_frequency">
+          How often do you personally peek at prices after automation does its thing?
+          <select name="price_check_frequency">
+            <option value="" disabled selected>Select a rhythm</option>
+            <option value="Multiple times a day (high caffeine mode)">Multiple times a day (high caffeine mode)</option>
+            <option value="Once a day keeps surprises away">Once a day keeps surprises away</option>
+            <option value="A few times a week">A few times a week</option>
+            <option value="Only when a metric screams">Only when a metric screams</option>
+            <option value="Rarely, I trust the robots (for now)">Rarely, I trust the robots (for now)</option>
+          </select>
+        </label>
+
+        <fieldset class="checkbox-group" data-category="Workflow" data-key="signal_menu">
+          <legend>Which signals most influence your repricing calls?</legend>
+          <label><input type="checkbox" name="signal_menu" value="Sales rank mood swings" />Sales rank mood swings</label>
+          <label><input type="checkbox" name="signal_menu" value="Buy Box tug-of-war" />Buy Box tug-of-war</label>
+          <label><input type="checkbox" name="signal_menu" value="Competitive offer depth" />Competitive offer depth</label>
+          <label><input type="checkbox" name="signal_menu" value="Inbound shipment timing" />Inbound shipment timing</label>
+          <label><input type="checkbox" name="signal_menu" value="Seasonal demand quirks" />Seasonal demand quirks</label>
+          <label><input type="checkbox" name="signal_menu" value="Margins and fees reality check" />Margins and fees reality check</label>
+          <label><input type="checkbox" name="signal_menu" value="Customer messages or feedback" />Customer messages or feedback</label>
+          <label><input type="checkbox" name="signal_menu" value="Other secret sauce" />Other secret sauce</label>
+        </fieldset>
+
+        <label data-category="Workflow" data-key="inventory_anxiety">
+          On a 1 to 5 scale, how spicy is your inventory anxiety right now?
+          <input
+            type="number"
+            name="inventory_anxiety"
+            min="1"
+            max="5"
+            placeholder="1 = chill zen, 5 = hair on fire"
+          />
+        </label>
+      </div>
+
+      <div class="page" data-page="2">
+        <h2>Risk, Glitches &amp; Experiments</h2>
+
+        <label data-category="RiskInsights" data-key="risk_posture">
+          What best sums up your pricing risk posture?
+          <select name="risk_posture">
+            <option value="" disabled selected>Choose your vibe</option>
+            <option value="Play-it-safe librarian: protect the floor">Play-it-safe librarian: protect the floor</option>
+            <option value="Balanced books: happy medium">Balanced books: happy medium</option>
+            <option value="Bold baron: chase upside, accept weirdness">Bold baron: chase upside, accept weirdness</option>
+            <option value="Depends on the SKU mood">Depends on the SKU mood</option>
+          </select>
+        </label>
+
+        <label data-category="RiskInsights" data-key="memorable_glitch">
+          Tell us about a pricing glitch that lives rent free in your head.
+          <textarea
+            name="memorable_glitch"
+            placeholder="Optional therapy session, what happened and what saved the day?"
+          ></textarea>
+        </label>
+
+        <fieldset class="checkbox-group" data-category="RiskInsights" data-key="safety_nets">
+          <legend>Which safety nets do you lean on when automation goes feral?</legend>
+          <label><input type="checkbox" name="safety_nets" value="Hard price floors/ceilings" />Hard price floors or ceilings</label>
+          <label><input type="checkbox" name="safety_nets" value="Manual review queue" />Manual review queue</label>
+          <label><input type="checkbox" name="safety_nets" value="Alert storm (email/SMS/push)" />Alert storm (email, SMS, push)</label>
+          <label><input type="checkbox" name="safety_nets" value="Pause switch or emergency stop" />Pause switch or emergency stop</label>
+          <label><input type="checkbox" name="safety_nets" value="Automated competitor filters" />Automated competitor filters</label>
+          <label><input type="checkbox" name="safety_nets" value="Buddy system / second set of eyes" />Buddy system or second set of eyes</label>
+          <label><input type="checkbox" name="safety_nets" value="Other contingency ritual" />Other contingency ritual</label>
+        </fieldset>
+
+        <label data-category="RiskInsights" data-key="experiment_cadence">
+          How often do you run pricing experiments just to see what happens?
+          <select name="experiment_cadence">
+            <option value="" disabled selected>Pick your experimental energy</option>
+            <option value="Weekly tinkering">Weekly tinkering</option>
+            <option value="Monthly tune-ups">Monthly tune-ups</option>
+            <option value="Quarterly science fair">Quarterly science fair</option>
+            <option value="Rarely, experiments bite">Rarely, experiments bite</option>
+            <option value="Never, my gut is the algorithm">Never, my gut is the algorithm</option>
+          </select>
+        </label>
+
+        <fieldset class="checkbox-group" data-category="RiskInsights" data-key="learning_sources">
+          <legend>Where do you learn new pricing tricks or get inspired?</legend>
+          <label><input type="checkbox" name="learning_sources" value="Seller forums or Discords" />Seller forums or Discords</label>
+          <label><input type="checkbox" name="learning_sources" value="YouTube deep dives" />YouTube deep dives</label>
+          <label><input type="checkbox" name="learning_sources" value="Podcasts or long-form interviews" />Podcasts or long-form interviews</label>
+          <label><input type="checkbox" name="learning_sources" value="Local seller meetups" />Local seller meetups</label>
+          <label><input type="checkbox" name="learning_sources" value="Industry reports and data drops" />Industry reports and data drops</label>
+          <label><input type="checkbox" name="learning_sources" value="Customer feedback and reviews" />Customer feedback and reviews</label>
+          <label><input type="checkbox" name="learning_sources" value="Other rabbit holes" />Other rabbit holes</label>
+        </fieldset>
+      </div>
+
+      <div class="page" data-page="3">
+        <h2>Wishlist, Community &amp; Follow-up</h2>
+
+        <label data-category="Wishlist" data-key="wishlist_feature">
+          If a repricer genie granted one wish, what would appear first?
+          <textarea
+            name="wishlist_feature"
+            placeholder="Go wild, absurd, brilliant, or both."
+          ></textarea>
+        </label>
+
+        <label data-category="Privacy" data-key="ai_trust_temperature">
+          How warm and fuzzy do you feel about AI-assisted repricing today?
+          <select name="ai_trust_temperature">
+            <option value="" disabled selected>Pick your temperature</option>
+            <option value="Room temperature skepticism">Room temperature skepticism</option>
+            <option value="Lukewarm but curious">Lukewarm but curious</option>
+            <option value="Comfortably warm, show me receipts">Comfortably warm, show me receipts</option>
+            <option value="Hot and ready, AI is my co-pilot">Hot and ready, AI is my co-pilot</option>
+          </select>
+        </label>
+
+        <label data-category="Participation" data-key="community_interest">
+          Would you join a bookseller lab for data swaps, experiments, or gentle chaos?
+          <select name="community_interest">
+            <option value="" disabled selected>Choose your adventure</option>
+            <option value="Yes, sign me up yesterday">Yes, sign me up yesterday</option>
+            <option value="Maybe, depends on time and snacks">Maybe, depends on time and snacks</option>
+            <option value="No thanks, I prefer stealth mode">No thanks, I prefer stealth mode</option>
+          </select>
+        </label>
+
+        <label data-category="Privacy" data-key="privacy_rating">
+          Rate how much privacy and local control matters (1-5).
+          <input
+            type="number"
+            name="privacy_rating"
+            min="1"
+            max="5"
+            placeholder="1 = shrug, 5 = sworn oath"
+          />
+        </label>
+
+        <label data-category="Participation" data-key="contact">
+          Optional: want updates or beta invites? Drop an email or handle.
+          <input
+            type="text"
+            name="contact"
+            autocomplete="email"
+            placeholder="Completely optional, no robot spam."
+          />
+          <span class="hint">We keep this separate and never sell or share it.</span>
+        </label>
+      </div>
+
+      <div class="navigation">
+        <button type="button" id="prev" class="nav-button" disabled>Previous</button>
+        <span id="progress" class="progress" aria-live="polite">1 / 4</span>
+  <button type="button" id="next" class="nav-button primary" aria-label="Save progress and continue">Save & Continue</button>
+        <button type="submit" id="submitBtn" class="primary" hidden>Send My Feedback</button>
+      </div>
+
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </form>
+
+  </body>
+  <script src="./survey.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js').catch((error) => {
+        console.error('Service worker registration failed:', error);
+        /* optional offline support */
+      });
+    }
+  </script>
+</html>

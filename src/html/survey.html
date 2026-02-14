@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Repricing Survey</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b3d91">
+</head>
+<body>
+  <aside class="offline-hint">
+    <h1>Quick Start (Works Offline)</h1>
+    <ol>
+      <li>Connect to Wi-Fi once, open this page, and allow it to finish loading.</li>
+      <li>Use your browser menu to select <strong>Add to Home Screen</strong> or <strong>Install App</strong>.</li>
+      <li>Before submitting responses, go back online so the form can sync to the survey endpoint.</li>
+    </ol>
+  </aside>
+  <form id="repricing-survey" autocomplete="on" method="POST" action=""> <!-- Apps Script endpoint set via JS -->
+    <section>
+      <h2>Seller Profile</h2>
+      <label for="experience">Years selling on Amazon:</label>
+      <input type="number" id="experience" name="experience" min="0" max="50" required data-meta="ordinal">
+      <label for="sku_count">Active SKUs:</label>
+      <input type="number" id="sku_count" name="sku_count" min="0" required data-meta="numeric">
+      <label for="model">Selling Model(s):</label>
+      <select id="model" name="model" multiple data-meta="multiselect">
+        <option value="FBA">FBA</option>
+        <option value="MF">Merchant Fulfilled</option>
+        <option value="Hybrid">Hybrid</option>
+      </select>
+      <label for="repricer">Repricer(s) Used:</label>
+      <input type="text" id="repricer" name="repricer" data-meta="multiselect">
+      <label for="keepa">Keepa Usage:</label>
+      <input type="text" id="keepa" name="keepa" data-meta="string">
+    </section>
+    <section>
+      <h2>Repricing Experience</h2>
+      <label for="satisfaction">Repricer Speed/Accuracy:</label>
+      <input type="range" id="satisfaction" name="satisfaction" min="1" max="5" data-meta="ordinal">
+  <label for="painpoint">Main Frustration:</label>
+  <textarea id="painpoint" name="painpoint" data-meta="text_long"></textarea>
+  <label for="contact_email">Contact email (optional, will be redacted on public view):</label>
+  <input type="email" id="contact_email" name="email" data-meta="email">
+    </section>
+    <button type="submit">Submit</button>
+  </form>
+  <script src="survey.js"></script>
+</body>
+</html>

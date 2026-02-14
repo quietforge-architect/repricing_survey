@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2025-10-12T00:00:00.000Z",
+  "totalResponses": 0,
+  "counts": {
+    "years_selling": {},
+    "selling_commitment": {},
+    "risk_posture": {},
+    "price_check_frequency": {},
+    "experiment_cadence": {},
+    "ai_trust_temperature": {},
+    "community_interest": {}
+  },
+  "averages": {
+    "weekly_hours": {
+      "mean": null,
+      "count": 0
+    },
+    "inventory_anxiety": {
+      "mean": null,
+      "count": 0
+    },
+    "privacy_rating": {
+      "mean": null,
+      "count": 0
+    }
+  },
+  "multiSelectTop": {
+    "sourcing_style": [],
+    "signal_menu": [],
+    "safety_nets": [],
+    "learning_sources": []
+  },
+  "textResponseCounts": {
+    "repricing_stack": 0,
+    "memorable_glitch": 0,
+    "wishlist_feature": 0
+  }
+}

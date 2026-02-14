@@ -1,0 +1,230 @@
+# Canonical question bank for the Amazon Repricing Feedback Survey.
+# Edit this file to update copy, options, or structure without touching the HTML form.
+meta:
+  version: "2.0.0"
+  last_synced: "2025-10-12"
+  source_file: survey/index.html
+  maintainer: Quiet Forge Development Studio
+
+survey:
+  title: "Amazon Repricing Feedback Survey"
+  description: "20-question humor-forward survey for indie booksellers exploring repricing gaps."
+  pages:
+    - id: bookseller_basics
+      title: "Shelf Life & Seller Lore"
+      purpose: "Warm up the conversation and understand the bookseller behind the barcode."
+      questions:
+        - key: years_selling
+          label: "How long have you been slinging stories on Amazon?"
+          category: SellerProfile
+          response_type: select
+          data_type: ordinal
+          required: true
+          placeholder: "Pick the era that fits"
+          options:
+            - "Still cracking the first spine (0-12 months)"
+            - "Plot twist prologue (1-2 years)"
+            - "Trilogy territory (3-5 years)"
+            - "Encyclopedia energy (5+ years)"
+        - key: selling_commitment
+          label: "Is bookselling a side quest or your main saga?"
+          category: SellerProfile
+          response_type: select
+          data_type: string
+          placeholder: "Choose the vibe"
+          options:
+            - "Part-time for fun (or funding more books)"
+            - "Full-time and living on ISBNs"
+            - "Seasonal snowstorm hustle"
+            - "Other mix of chaos"
+        - key: weekly_hours
+          label: "How many hours a week do you wrestle listings, boxes, and repricing dashboards?"
+          category: SellerProfile
+          response_type: number
+          data_type: numeric
+          min: 0
+          max: 120
+          placeholder: "e.g., 28"
+          notes: "Rough estimate is perfect; we are not your time-tracking app."
+        - key: sourcing_style
+          label: "What sourcing moves fill your cart (pick all that feel true)?"
+          category: SellerProfile
+          response_type: checkbox_group
+          data_type: multiselect
+          options:
+            - "Library sale lightning raids"
+            - "Estate sale archeology"
+            - "Bulk pallets and mystery Gaylords"
+            - "Retail scouting with scanner in hand"
+            - "Consignment or community partnerships"
+            - "Online arbitrage rabbit holes"
+            - "Other secret chapter"
+          has_other: true
+          other_field: sourcing_style_other
+        - key: non_book_inventory
+          label: "Anything besides books sneaking onto your shelves?"
+          category: SellerProfile
+          response_type: text
+          data_type: string
+          placeholder: "Optional: board games, vinyl, obscure garden gnomes..."
+    - id: workflow_ops
+      title: "Daily Rituals & Tooling"
+      purpose: "Map the workflows, tools, and mental models powering your pricing groove."
+      questions:
+        - key: listing_rhythm
+          label: "How do you batch your listing and repricing sessions?"
+          category: Workflow
+          response_type: select
+          data_type: string
+          placeholder: "Pick the closest cadence"
+          options:
+            - "Daily micro-sprints with a mug of something warm"
+            - "Big weekly batch while the world sleeps"
+            - "Weekend warrior marathons"
+            - "Chaotic whenever-I-can bursts"
+        - key: repricing_stack
+          label: "Name the tools, scripts, or lucky charms in your repricing stack."
+          category: Workflow
+          response_type: textarea
+          data_type: text_long
+          placeholder: "Feel free to brag about homebrew magic or off-the-shelf favorites."
+        - key: price_check_frequency
+          label: "How often do you personally peek at prices after automation does its thing?"
+          category: Workflow
+          response_type: select
+          data_type: string
+          options:
+            - "Multiple times a day (high caffeine mode)"
+            - "Once a day keeps surprises away"
+            - "A few times a week"
+            - "Only when a metric screams"
+            - "Rarely—I trust the robots (for now)"
+        - key: signal_menu
+          label: "Which signals most influence your repricing calls?"
+          category: Workflow
+          response_type: checkbox_group
+          data_type: multiselect
+          options:
+            - "Sales rank mood swings"
+            - "Buy Box tug-of-war"
+            - "Competitive offer depth"
+            - "Inbound shipment timing"
+            - "Seasonal demand quirks"
+            - "Margins and fees reality check"
+            - "Customer messages or feedback"
+            - "Other secret sauce"
+          has_other: true
+          other_field: signal_menu_other
+        - key: inventory_anxiety
+          label: "On a 1-5 scale, how spicy is your inventory anxiety right now?"
+          category: Workflow
+          response_type: number
+          data_type: ordinal
+          min: 1
+          max: 5
+          placeholder: "1 = chill zen, 5 = hair on fire"
+    - id: risk_learning
+      title: "Risk, Glitches & Experiments"
+      purpose: "Surface hard-earned lessons and appetite for experimentation."
+      questions:
+        - key: risk_posture
+          label: "What best sums up your pricing risk posture?"
+          category: RiskInsights
+          response_type: select
+          data_type: string
+          options:
+            - "Play-it-safe librarian: protect the floor"
+            - "Balanced books: happy medium"
+            - "Bold baron: chase upside, accept weirdness"
+            - "Depends on the SKU mood"
+        - key: memorable_glitch
+          label: "Tell us about a pricing glitch that lives rent-free in your head."
+          category: RiskInsights
+          response_type: textarea
+          data_type: text_long
+          placeholder: "Optional therapy session—what happened, what saved the day?"
+        - key: safety_nets
+          label: "Which safety nets do you lean on when automation goes feral?"
+          category: RiskInsights
+          response_type: checkbox_group
+          data_type: multiselect
+          options:
+            - "Hard price floors/ceilings"
+            - "Manual review queue"
+            - "Alert storm (email/SMS/push)"
+            - "Pause switch or emergency stop"
+            - "Automated competitor filters"
+            - "Buddy system / second set of eyes"
+            - "Other contingency ritual"
+          has_other: true
+          other_field: safety_nets_other
+        - key: experiment_cadence
+          label: "How often do you run pricing experiments just to see what happens?"
+          category: RiskInsights
+          response_type: select
+          data_type: string
+          options:
+            - "Weekly tinkering"
+            - "Monthly tune-ups"
+            - "Quarterly science fair"
+            - "Rarely—experiments bite"
+            - "Never—my gut is the algorithm"
+        - key: learning_sources
+          label: "Where do you learn new pricing tricks or get inspired?"
+          category: RiskInsights
+          response_type: checkbox_group
+          data_type: multiselect
+          options:
+            - "Seller forums or Discords"
+            - "YouTube deep dives"
+            - "Podcasts or long-form interviews"
+            - "Local seller meetups"
+            - "Industry reports and data drops"
+            - "Customer feedback and reviews"
+            - "Other rabbit holes"
+          has_other: true
+          other_field: learning_sources_other
+    - id: future_wishlist
+      title: "Wishlist, Community & Follow-up"
+      purpose: "Capture dream-state features, trust signals, and community energy."
+      questions:
+        - key: wishlist_feature
+          label: "If a repricer genie granted one wish, what would appear first?"
+          category: Wishlist
+          response_type: textarea
+          data_type: text_long
+          placeholder: "Go wild—absurd, brilliant, or both."
+        - key: ai_trust_temperature
+          label: "How warm and fuzzy do you feel about AI-assisted repricing today?"
+          category: Privacy
+          response_type: select
+          data_type: string
+          options:
+            - "Room temperature skepticism"
+            - "Lukewarm but curious"
+            - "Comfortably warm—show me receipts"
+            - "Hot and ready—AI is my co-pilot"
+        - key: community_interest
+          label: "Would you join a bookseller lab for data swaps, experiments, or gentle chaos?"
+          category: Participation
+          response_type: select
+          data_type: string
+          options:
+            - "Yes, sign me up yesterday"
+            - "Maybe—depends on time and snacks"
+            - "No thanks, I prefer stealth mode"
+        - key: privacy_rating
+          label: "Rate how much privacy & local control matters (1-5)."
+          category: Privacy
+          response_type: number
+          data_type: ordinal
+          min: 1
+          max: 5
+          placeholder: "1 = shrug, 5 = sworn oath"
+        - key: contact
+          label: "Optional: want updates or beta invites? Drop an email/handle."
+          category: Participation
+          response_type: text
+          data_type: string
+          placeholder: "Completely optional—no robot spam"
+          hint: "We keep this separate and never sell or spray it around."
